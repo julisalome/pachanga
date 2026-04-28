@@ -244,11 +244,10 @@ function getSortedRows(stats) {
 
 // ─── TABLE ─────────────────────────────────────────────────────────────────
 function updateHeaderTournamentName() {
-  const el = document.getElementById('header-tournament-name');
-  if (!el) return;
-  const name = state.currentTournamentName || 'Torneo Apertura 2025';
-  el.textContent = name;
-  el.style.display = name ? 'block' : 'none';
+  const titleEl = document.getElementById('tournament-title-text');
+  if (titleEl) {
+    titleEl.textContent = state.currentTournamentName || 'Torneo Apertura 2025';
+  }
 }
 
 function renderTable() {

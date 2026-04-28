@@ -1122,3 +1122,16 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
   margin: 24px 0;
   opacity: .4;
 }
+
+/* ─── TOURNAMENT TITLE BAR ──────────────────────────────────────────────── */
+.tournament-title-bar {
+  padding: 10px 14px 8px;
+  background: linear-gradient(90deg, #0f2010, #111, #0f2010);
+  border-bottom: 1px solid #1e3a1e;
+}
+.tournament-title-text {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 2px;
+  color: var(--green-accent);
+}
