@@ -65,6 +65,7 @@ onSnapshot(DOC_REF, async (snapshot) => {
     if (id === 'cargar')    renderChips();
     if (id === 'historial') renderHistorial();
     if (id === 'jugadores') renderRoster();
+    if (id === 'stats') renderTournamentStats();
   }
 }, () => {
   showLoadingOverlay(false);
@@ -191,6 +192,7 @@ function showView(v, btn) {
   if (v === 'cargar')    renderChips();
   if (v === 'historial') renderHistorial();
   if (v === 'jugadores') renderRoster();
+  if (v === 'stats') renderTournamentStats();
 }
 window.showView = showView;
 
@@ -454,6 +456,97 @@ async function resetAll() {
 window.resetAll = resetAll;
 
 
+
+// ─── TOURNAMENT STATS ──────────────────────────────────────────────────────
+function renderTournamentStats() {
+  const el = document.getElementById('view-stats');
+  if (!el) return;
+  const matches = state.matches || [];
+  const playerStats = computeStats();
+  const rows = getSortedRows(playerStats);
+
+  if (matches.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>Sin partidos todavía.</p></div>';
+    return;
+  }
+
+  // Most goals in a match
+  const mostGoals = matches.reduce((best, m) => {
+    const total = (parseInt(m.goalsA)||0) + (parseInt(m.goalsB)||0);
+    return total > (best ? (parseInt(best.goalsA)||0)+(parseInt(best.goalsB)||0) : 0) ? m : best;
+  }, null);
+
+  // Biggest win
+  const biggestWin = matches.reduce((best, m) => {
+    const diff = Math.abs((parseInt(m.goalsA)||0) - (parseInt(m.goalsB)||0));
+    const bestDiff = best ? Math.abs((parseInt(best.goalsA)||0)-(parseInt(best.goalsB)||0)) : 0;
+    return diff > bestDiff ? m : best;
+  }, null);
+
+  // Most & least effective (min 3 games)
+  const eligible = rows.filter(([,s]) => s.pj >= 3);
+  const mostEff = eligible.length > 0 ? eligible[0] : null;
+  const leastEff = eligible.length > 0 ? eligible[eligible.length-1] : null;
+
+  // Most played
+  const mostPlayed = rows.reduce((best, r) => r[1].pj > (best ? best[1].pj : 0) ? r : best, null);
+
+  // Most wins
+  const mostWins = rows.reduce((best, r) => r[1].pg > (best ? best[1].pg : 0) ? r : best, null);
+
+  // Best attack (most GF)
+  const bestAttack = rows.reduce((best, r) => r[1].gf > (best ? best[1].gf : 0) ? r : best, null);
+
+  // Best defense (least GC, min 3 games)
+  const bestDefense = eligible.length > 0
+    ? eligible.reduce((best, r) => (r[1].gc / r[1].pj) < (best[1].gc / best[1].pj) ? r : best)
+    : null;
+
+  // Total goals in tournament
+  const totalGoals = matches.reduce((s,m) => s + (parseInt(m.goalsA)||0) + (parseInt(m.goalsB)||0), 0);
+  const avgGoals = (totalGoals / matches.length).toFixed(1);
+
+  function statCard(icon, label, value, sub) {
+    return `<div class="stats-card">
+      <div class="stats-card-icon">${icon}</div>
+      <div class="stats-card-body">
+        <div class="stats-card-label">${label}</div>
+        <div class="stats-card-value">${value}</div>
+        ${sub ? `<div class="stats-card-sub">${sub}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  const gaA = parseInt(mostGoals?.goalsA)||0, gaB = parseInt(mostGoals?.goalsB)||0;
+  const bwA = parseInt(biggestWin?.goalsA)||0, bwB = parseInt(biggestWin?.goalsB)||0;
+  const bwWinner = bwA > bwB ? biggestWin?.teamA : biggestWin?.teamB;
+
+  el.innerHTML = `
+    <div style="padding:20px">
+      <p class="section-title">Estadísticas del torneo</p>
+
+      <div class="stats-section-title">General</div>
+      <div class="stats-grid">
+        ${statCard('⚽', 'Partidos jugados', matches.length, '')}
+        ${statCard('🥅', 'Goles totales', totalGoals, `${avgGoals} por partido`)}
+        ${mostGoals ? statCard('🔥', 'Partido con más goles', `${gaA} – ${gaB}`, `${mostGoals.date} · ${gaA+gaB} goles`) : ''}
+        ${biggestWin ? statCard('💥', 'Mayor goleada', `${bwA} – ${bwB}`, `${biggestWin.date}`) : ''}
+      </div>
+
+      <div class="stats-section-title">Jugadores</div>
+      <div class="stats-grid">
+        ${mostPlayed ? statCard('🏃', 'Más partidos', mostPlayed[0], `${mostPlayed[1].pj} partidos`) : ''}
+        ${mostWins ? statCard('🏆', 'Más victorias', mostWins[0], `${mostWins[1].pg} victorias`) : ''}
+        ${mostEff ? statCard('⚡', 'Más efectivo', mostEff[0], `${((mostEff[1].pts/(mostEff[1].pj*3))*100).toFixed(1)}% (mín. 3 PJ)`) : ''}
+        ${leastEff && leastEff !== mostEff ? statCard('📉', 'Menos efectivo', leastEff[0], `${((leastEff[1].pts/(leastEff[1].pj*3))*100).toFixed(1)}% (mín. 3 PJ)`) : ''}
+        ${bestAttack ? statCard('⚔️', 'Más goles a favor', bestAttack[0], `${bestAttack[1].gf} GF`) : ''}
+        ${bestDefense ? statCard('🛡️', 'Menos goles en contra', bestDefense[0], `${(bestDefense[1].gc/bestDefense[1].pj).toFixed(1)} GC/partido`) : ''}
+      </div>
+    </div>
+  `;
+}
+window.renderTournamentStats = renderTournamentStats;
+
 // ─── PLAYER PROFILE ────────────────────────────────────────────────────────
 function openProfile(name) {
   renderProfile(name);
@@ -537,6 +630,35 @@ function renderProfile(name) {
         </div>`;
       }).join('');
 
+  // All-time combined stats
+  const histStats = (() => {
+    let tpts = 0, tpj = 0, tpg = 0, tpe = 0, tpp = 0, tgf = 0, tgc = 0;
+    // Current tournament
+    tpts += pts; tpj += pj; tpg += pg; tpe += pe; tpp += pp; tgf += gf; tgc += gc;
+    // Historical tournaments
+    HISTORICAL_TOURNAMENTS.forEach(t => {
+      const s = t.standings[name];
+      if (s) { tpts += s.pts; tpj += s.pj; tpg += s.pg; tpe += s.pe; tpp += s.pp; }
+    });
+    const tdg = tgf - tgc;
+    const teff = tpj > 0 ? ((tpts / (tpj * 3)) * 100).toFixed(1) : '0.0';
+    const teffClass = parseFloat(teff) >= 66 ? 'eff-high' : parseFloat(teff) >= 40 ? 'eff-mid' : 'eff-low';
+    const tdgClass = tdg > 0 ? 'dg-pos' : tdg < 0 ? 'dg-neg' : 'dg-zero';
+    return { tpts, tpj, tpg, tpe, tpp, tgf, tgc, tdg, teff, teffClass, tdgClass };
+  })();
+
+  const allTimeStatsHTML = (histStats.tpj > pj) ? `
+    <div class="profile-section-header" style="background:#1a1600;color:#a08030;border-color:#3a3000">Estadísticas globales</div>
+    <div class="profile-stats-grid" style="background:#2a2400">
+      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val profile-pts">\${histStats.tpts}</span><span class="profile-stat-key">Pts</span></div>
+      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val">\${histStats.tpj}</span><span class="profile-stat-key">PJ</span></div>
+      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val" style="color:#5cb85c">\${histStats.tpg}</span><span class="profile-stat-key">PG</span></div>
+      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val" style="color:#c8b85c">\${histStats.tpe}</span><span class="profile-stat-key">PE</span></div>
+      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val" style="color:#e05252">\${histStats.tpp}</span><span class="profile-stat-key">PP</span></div>
+      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val \${histStats.tdgClass}">\${histStats.tdg > 0 ? '+' + histStats.tdg : histStats.tdg}</span><span class="profile-stat-key">DG</span></div>
+      <div class="profile-stat" style="background:#1a1600"><span class="eff-cell \${histStats.teffClass}" style="font-size:14px">\${histStats.teff}%</span><span class="profile-stat-key">Ef.%</span></div>
+    </div>` : '';
+
   // Titles & historical tournaments
   const playerTitles = HISTORICAL_TITLES[name] || 0;
   const playerTournaments = HISTORICAL_TOURNAMENTS.filter(t => t.standings[name]);
@@ -565,6 +687,68 @@ function renderProfile(name) {
       </div>
     </div>`;
   }).join('');
+
+
+  // ── Compañeros y rivales ──
+  const companions = {};
+  const rivals = {};
+  matches.forEach(m => {
+    m.teammates.forEach(t => {
+      if (!companions[t]) companions[t] = { w: 0, total: 0 };
+      companions[t].total++;
+      if (m.result === 'W') companions[t].w++;
+    });
+    m.rivals.forEach(r => {
+      if (!rivals[r]) rivals[r] = { w: 0, l: 0, total: 0 };
+      rivals[r].total++;
+      if (m.result === 'W') rivals[r].w++;
+      else if (m.result === 'L') rivals[r].l++;
+    });
+  });
+
+  const compSorted = Object.entries(companions)
+    .filter(([,v]) => v.total >= 1)
+    .sort((a,b) => (b[1].w/b[1].total) - (a[1].w/a[1].total))
+    .slice(0, 5);
+
+  const rivalsSorted = Object.entries(rivals)
+    .filter(([,v]) => v.total >= 1)
+    .sort((a,b) => b[1].total - a[1].total)
+    .slice(0, 5);
+
+  const compHTML = compSorted.length === 0 ? '' : `
+    <div class="profile-section" style="margin-top:8px">
+      <div class="profile-section-title">Mejores compañeros</div>
+      ${compSorted.map(([p, v]) => {
+        const pct = Math.round((v.w / v.total) * 100);
+        const barClass = pct >= 66 ? 'bar-green' : pct >= 40 ? 'bar-yellow' : 'bar-red';
+        return `<div class="rival-row">
+          <span class="rival-name">${p}</span>
+          <div class="rival-bar-wrap">
+            <div class="rival-bar ${barClass}" style="width:${pct}%"></div>
+          </div>
+          <span class="rival-pct">${pct}%</span>
+          <span class="rival-sub">${v.w}G/${v.total}P</span>
+        </div>`;
+      }).join('')}
+    </div>` ;
+
+  const rivalsHTML = rivalsSorted.length === 0 ? '' : `
+    <div class="profile-section" style="margin-top:8px">
+      <div class="profile-section-title">Rivales frecuentes</div>
+      ${rivalsSorted.map(([p, v]) => {
+        const pct = Math.round((v.w / v.total) * 100);
+        const barClass = pct >= 66 ? 'bar-green' : pct >= 40 ? 'bar-yellow' : 'bar-red';
+        return `<div class="rival-row">
+          <span class="rival-name">${p}</span>
+          <div class="rival-bar-wrap">
+            <div class="rival-bar ${barClass}" style="width:${pct}%"></div>
+          </div>
+          <span class="rival-pct">${pct}%</span>
+          <span class="rival-sub">${v.w}G ${v.l}D/${v.total}P</span>
+        </div>`;
+      }).join('')}
+    </div>`;
 
   document.getElementById('profile-panel').innerHTML = `
     <div class="profile-inner">

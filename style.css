@@ -781,3 +781,69 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
   background: #222;
 }
 .edit-avatar-preview:hover { border-color: var(--green-accent); }
+
+/* ─── RIVALS / COMPANIONS ───────────────────────────────────────────────── */
+.rival-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #1e1e1e;
+}
+.rival-row:last-child { border-bottom: none; }
+.rival-name {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  min-width: 72px; flex-shrink: 0;
+}
+.rival-bar-wrap {
+  flex: 1; height: 6px; background: #2a2a2a;
+  border-radius: 3px; overflow: hidden;
+}
+.rival-bar {
+  height: 100%; border-radius: 3px; transition: width .4s;
+}
+.bar-green { background: var(--green-accent); }
+.bar-yellow { background: #c8b85c; }
+.bar-red { background: var(--danger); }
+.rival-pct {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px; font-weight: 700; color: var(--text);
+  min-width: 36px; text-align: right;
+}
+.rival-sub {
+  font-size: 11px; color: var(--muted);
+  min-width: 52px; text-align: right; flex-shrink: 0;
+}
+
+/* ─── TOURNAMENT STATS ──────────────────────────────────────────────────── */
+.stats-section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px;
+  color: var(--muted); margin: 18px 0 10px;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+.stats-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 14px 12px;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.stats-card-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.stats-card-body { flex: 1; min-width: 0; }
+.stats-card-label {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .5px;
+  color: var(--muted); margin-bottom: 4px;
+}
+.stats-card-value {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 700; color: var(--text);
+  line-height: 1.1;
+}
+.stats-card-sub {
+  font-size: 11px; color: var(--muted); margin-top: 3px;
+}
