@@ -44,6 +44,7 @@ onSnapshot(DOC_REF, async (snapshot) => {
     state = { players: [], matches: [], playerData: {} };
   }
   await runMigrationIfNeeded();
+  renderTop5();
   renderPalmares();
   applyAdminUI();
   // Re-render profile if open
@@ -61,7 +62,7 @@ onSnapshot(DOC_REF, async (snapshot) => {
   const activeView = document.querySelector('.view.active');
   if (activeView) {
     const id = activeView.id.replace('view-', '');
-    if (id === 'tabla')     renderTable();
+    if (id === 'tabla')     { renderTable(); renderTop5(); }
     if (id === 'cargar')    renderChips();
     if (id === 'historial') renderHistorial();
     if (id === 'jugadores') renderRoster();
@@ -188,7 +189,7 @@ function showView(v, btn) {
   document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('view-' + v).classList.add('active');
   if (btn) btn.classList.add('active');
-  if (v === 'tabla')     renderTable();
+  if (v === 'tabla')     { renderTable(); renderTop5(); }
   if (v === 'cargar')    renderChips();
   if (v === 'historial') renderHistorial();
   if (v === 'jugadores') renderRoster();
@@ -750,7 +751,8 @@ function renderProfile(name) {
   const rivalsHTML = rivalsSorted.length===0?'':`<div class="profile-section"><div class="profile-section-title">Rivales frecuentes</div>${rivalsSorted.map(([p,v])=>{const pct=Math.round((v.w/v.total)*100);const bc=pct>=66?'bar-green':pct>=40?'bar-yellow':'bar-red';return `<div class="rival-row"><span class="rival-name">${p}</span><div class="rival-bar-wrap"><div class="rival-bar ${bc}" style="width:${pct}%"></div></div><span class="rival-pct">${pct}%</span><span class="rival-sub">${v.w}G ${v.l}D/${v.total}P</span></div>`;}).join('')}</div>`;
 
   // Titles
-  const playerTitles = HISTORICAL_TITLES[name] || 0;
+  const customTitles = (state.customTitles && state.customTitles[name]) || 0;
+  const playerTitles = (HISTORICAL_TITLES[name] || 0) + customTitles;
   const titlesHTML = playerTitles > 0
     ? `<div class="profile-titles-row">${Array(playerTitles).fill('🏆').join('')} <span class="profile-titles-label">${playerTitles} título${playerTitles>1?'s':''}</span></div>`
     : '';
@@ -786,6 +788,7 @@ function renderProfile(name) {
     <div class="profile-inner">
       <div class="profile-topbar">
         <button class="profile-back" onclick="closeProfile()">← Volver</button>
+        <button class="btn btn-outline" style="margin-left:auto;font-size:11px;padding:5px 10px" onclick="openCompare('${name}')">⚡ Comparar</button>
       </div>
       <div class="profile-hero">
         ${avatarHTML(name, 56)}
@@ -1018,6 +1021,30 @@ async function toggleReaction(matchId, emoji) {
 }
 window.toggleReaction = toggleReaction;
 
+
+// ─── COMMENTS ──────────────────────────────────────────────────────────────
+function toggleComments(matchId) {
+  const el = document.getElementById('comments-' + matchId);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+window.toggleComments = toggleComments;
+
+async function postComment(matchId) {
+  const input = document.getElementById('comment-input-' + matchId);
+  const nameInput = document.getElementById('comment-name-' + matchId);
+  const text = input.value.trim();
+  const author = nameInput.value.trim() || 'Anónimo';
+  if (!text) return;
+  const match = state.matches.find(m => m.id === matchId);
+  if (!match) return;
+  if (!match.comments) match.comments = [];
+  match.comments.push({ author, text, ts: Date.now() });
+  await saveToFirestore();
+  input.value = '';
+}
+window.postComment = postComment;
+
 // ─── EDIT MATCH ────────────────────────────────────────────────────────────
 let editingMatchId = null;
 let editSelA = new Set();
@@ -1097,6 +1124,279 @@ async function saveEditMatch() {
 }
 window.saveEditMatch = saveEditMatch;
 
+
+
+
+// ─── TOP 5 EFECTIVIDAD ─────────────────────────────────────────────────────
+function renderTop5() {
+  const el = document.getElementById('top5-section');
+  if (!el) return;
+  const stats = computeStats();
+  const rows = getSortedRows(stats).filter(([,s]) => s.pj >= 1);
+  if (rows.length === 0) { el.style.display = 'none'; return; }
+
+  // Sort by efectividad
+  const top5 = [...rows]
+    .sort((a,b) => {
+      const ea = a[1].pj > 0 ? a[1].pts/(a[1].pj*3) : 0;
+      const eb = b[1].pj > 0 ? b[1].pts/(b[1].pj*3) : 0;
+      return eb - ea;
+    })
+    .slice(0, 5);
+
+  const maxEff = top5.length > 0
+    ? (top5[0][1].pj > 0 ? (top5[0][1].pts/(top5[0][1].pj*3))*100 : 0)
+    : 100;
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="top5-header">
+      <span class="top5-title">⚡ Top 5 Efectividad</span>
+      <span class="top5-sub">Torneo actual</span>
+    </div>
+    <div class="top5-list">
+      ${top5.map(([name, s], i) => {
+        const eff = s.pj > 0 ? (s.pts/(s.pj*3))*100 : 0;
+        const barW = maxEff > 0 ? (eff/maxEff)*100 : 0;
+        const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+        return `<div class="top5-row" onclick="openProfile('${escapeName(name)}')">
+          <span class="top5-medal">${medals[i]}</span>
+          ${avatarHTML(name, 30)}
+          <span class="top5-name">${getPlayerDisplayName(name)}</span>
+          <div class="top5-bar-wrap">
+            <div class="top5-bar" style="width:${barW.toFixed(1)}%"></div>
+          </div>
+          <span class="top5-eff">${eff.toFixed(1)}%</span>
+          <span class="top5-pj">${s.pj}PJ</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ─── COMPARE / HEAD TO HEAD ────────────────────────────────────────────────
+function openCompare(nameA) {
+  // Populate player B selector
+  const sel = document.getElementById('compare-player-b');
+  sel.innerHTML = '<option value="">Elegí un jugador...</option>' +
+    state.players.filter(p => p !== nameA).map(p =>
+      `<option value="${p}">${getPlayerDisplayName(p)}</option>`
+    ).join('');
+  document.getElementById('compare-name-a').textContent = getPlayerDisplayName(nameA);
+  document.getElementById('compare-name-a-full').textContent = nameA;
+  document.getElementById('compare-body').innerHTML = '';
+  document.getElementById('compare-panel').classList.add('open');
+}
+window.openCompare = openCompare;
+
+function closeCompare() {
+  document.getElementById('compare-panel').classList.remove('open');
+}
+window.closeCompare = closeCompare;
+
+function runCompare() {
+  const nameA = document.getElementById('compare-name-a-full').textContent;
+  const nameB = document.getElementById('compare-player-b').value;
+  if (!nameB) return;
+
+  const stats = computeStats();
+  const sA = stats[nameA] || { pts:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0 };
+  const sB = stats[nameB] || { pts:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0 };
+
+  const effA = sA.pj > 0 ? ((sA.pts/(sA.pj*3))*100).toFixed(1) : '0.0';
+  const effB = sB.pj > 0 ? ((sB.pts/(sB.pj*3))*100).toFixed(1) : '0.0';
+
+  // Head to head
+  let h2h = { togetherW:0, togetherL:0, togetherE:0, togetherPJ:0, vsW:0, vsL:0, vsE:0, vsPJ:0 };
+  state.matches.forEach(m => {
+    const inAinA = (m.teamA||[]).includes(nameA);
+    const inBinA = (m.teamA||[]).includes(nameB);
+    const inAinB = (m.teamB||[]).includes(nameA);
+    const inBinB = (m.teamB||[]).includes(nameB);
+    const ga = parseInt(m.goalsA)||0, gb = parseInt(m.goalsB)||0;
+
+    // Both on same team
+    if ((inAinA && inBinA) || (inAinB && inBinB)) {
+      h2h.togetherPJ++;
+      const aWon = (inAinA && ga>gb) || (inAinB && gb>ga);
+      const draw = ga===gb;
+      if (draw) h2h.togetherE++;
+      else if (aWon) h2h.togetherW++;
+      else h2h.togetherL++;
+    }
+    // Facing each other
+    if ((inAinA && inBinB) || (inAinB && inBinA)) {
+      h2h.vsPJ++;
+      const aWon = (inAinA && ga>gb) || (inAinB && gb>ga);
+      const draw = ga===gb;
+      if (draw) h2h.vsE++;
+      else if (aWon) h2h.vsW++;
+      else h2h.vsL++;
+    }
+  });
+
+  function bar(valA, valB, label) {
+    const total = (parseFloat(valA)||0) + (parseFloat(valB)||0);
+    const pctA = total > 0 ? Math.round((parseFloat(valA)/total)*100) : 50;
+    const pctB = 100 - pctA;
+    return `<div class="cmp-row">
+      <span class="cmp-val-a">${valA}</span>
+      <div class="cmp-bar-wrap">
+        <div class="cmp-bar-a" style="width:${pctA}%"></div>
+        <div class="cmp-bar-b" style="width:${pctB}%"></div>
+      </div>
+      <span class="cmp-val-b">${valB}</span>
+      <span class="cmp-label">${label}</span>
+    </div>`;
+  }
+
+  const dnA = getPlayerDisplayName(nameA), dnB = getPlayerDisplayName(nameB);
+
+  document.getElementById('compare-body').innerHTML = `
+    <div class="cmp-header">
+      <div class="cmp-player-a">${avatarHTML(nameA,40)}<span>${dnA}</span></div>
+      <div class="cmp-vs">VS</div>
+      <div class="cmp-player-b">${avatarHTML(nameB,40)}<span>${dnB}</span></div>
+    </div>
+    <div class="cmp-section-title">Torneo actual</div>
+    ${bar(sA.pts, sB.pts, 'Pts')}
+    ${bar(sA.pj, sB.pj, 'PJ')}
+    ${bar(sA.pg, sB.pg, 'PG')}
+    ${bar(sA.pp, sB.pp, 'PP')}
+    ${bar(effA, effB, 'Ef.%')}
+    ${bar(sA.gf-sA.gc, sB.gf-sB.gc, 'DG')}
+
+    ${h2h.togetherPJ > 0 ? `
+    <div class="cmp-section-title">Juntos (${h2h.togetherPJ} partidos)</div>
+    <div class="cmp-h2h-row">
+      <span class="cmp-h2h-w">${h2h.togetherW} victorias</span>
+      <span class="cmp-h2h-e">${h2h.togetherE} empates</span>
+      <span class="cmp-h2h-l">${h2h.togetherL} derrotas</span>
+    </div>` : ''}
+
+    ${h2h.vsPJ > 0 ? `
+    <div class="cmp-section-title">Cara a cara (${h2h.vsPJ} partidos)</div>
+    <div class="cmp-h2h-row">
+      <span style="font-size:13px;font-weight:600;color:var(--text)">${dnA}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="cmp-h2h-w">${h2h.vsW}G</span>
+        <span class="cmp-h2h-e">${h2h.vsE}E</span>
+        <span class="cmp-h2h-l">${h2h.vsL}D</span>
+      </div>
+    </div>` : `<div class="cmp-section-title" style="color:#555">Nunca se enfrentaron</div>`}
+  `;
+}
+window.runCompare = runCompare;
+
+// ─── PULL TO REFRESH ───────────────────────────────────────────────────────
+(function() {
+  let startY = 0, pulling = false;
+  const THRESHOLD = 80;
+
+  const indicator = document.createElement('div');
+  indicator.id = 'ptr-indicator';
+  indicator.innerHTML = '<span id="ptr-arrow">↓</span> <span id="ptr-text">Tirá para actualizar</span>';
+  indicator.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:490;background:var(--green-dim);color:var(--green-accent);font-family:"Barlow",sans-serif;font-size:13px;font-weight:600;letter-spacing:.4px;text-align:center;padding:10px;transform:translateY(-100%);transition:transform .2s;display:flex;align-items:center;justify-content:center;gap:8px';
+  document.body.appendChild(indicator);
+
+  document.addEventListener('touchstart', e => {
+    if (window.scrollY === 0) { startY = e.touches[0].clientY; pulling = true; }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 10) {
+      const pct = Math.min(dy / THRESHOLD, 1);
+      indicator.style.transform = `translateY(${(pct - 1) * 100}%)`;
+      document.getElementById('ptr-arrow').style.transform = `rotate(${pct * 180}deg)`;
+      document.getElementById('ptr-text').textContent = dy >= THRESHOLD ? '¡Soltá para actualizar!' : 'Tirá para actualizar';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!pulling) return;
+    pulling = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    indicator.style.transform = 'translateY(-100%)';
+    if (dy >= THRESHOLD) {
+      document.getElementById('ptr-text').textContent = 'Actualizando...';
+      indicator.style.transform = 'translateY(0)';
+      // Force re-fetch from Firestore
+      setTimeout(() => { indicator.style.transform = 'translateY(-100%)'; }, 1200);
+      // Re-render active view
+      const activeView = document.querySelector('.view.active');
+      if (activeView) {
+        const id = activeView.id.replace('view-', '');
+        if (id === 'tabla') { renderTable(); renderPalmares(); }
+        if (id === 'historial') renderHistorial();
+        if (id === 'stats') renderTournamentStats();
+      }
+    }
+  }, { passive: true });
+})();
+
+
+// ─── CLOSE TOURNAMENT ──────────────────────────────────────────────────────
+function openCloseTournament() {
+  document.getElementById('close-tournament-modal').style.display = 'flex';
+}
+window.openCloseTournament = openCloseTournament;
+
+function closeCloseTournamentModal(e) {
+  if (!e || e.target.id === 'close-tournament-modal') {
+    document.getElementById('close-tournament-modal').style.display = 'none';
+  }
+}
+window.closeCloseTournamentModal = closeCloseTournamentModal;
+
+async function confirmCloseTournament() {
+  const nameInput = document.getElementById('new-tournament-name').value.trim();
+  const championsInput = document.getElementById('tournament-champions').value.trim();
+  if (!nameInput) { alert('Ingresá el nombre del torneo.'); return; }
+
+  const stats = computeStats();
+  const rows = getSortedRows(stats);
+
+  // Build standings for archive
+  const standings = {};
+  rows.forEach(([name, s]) => { standings[name] = { pts: s.pts, pj: s.pj, pg: s.pg, pe: s.pe, pp: s.pp }; });
+
+  // Champions: use input or auto-detect (tied leaders)
+  let champions = [];
+  if (championsInput) {
+    champions = championsInput.split(',').map(s => s.trim()).filter(Boolean);
+  } else if (rows.length > 0) {
+    const maxPts = rows[0][1].pts;
+    champions = rows.filter(([,s]) => s.pts === maxPts).map(([n]) => n);
+  }
+
+  // Build new tournament entry
+  const newTournament = { name: nameInput, champion: true, champions, standings };
+
+  // Save to Firestore: archive current, reset matches/players, keep playerData
+  if (!state.archivedTournaments) state.archivedTournaments = [];
+  state.archivedTournaments.push(newTournament);
+
+  // Update titles
+  if (!state.customTitles) state.customTitles = {};
+  champions.forEach(p => {
+    state.customTitles[p] = (state.customTitles[p] || 0) + 1;
+  });
+
+  // Reset current tournament
+  state.matches = [];
+  state.migrationV1 = true; // don't re-run migration
+
+  await saveToFirestore();
+  document.getElementById('close-tournament-modal').style.display = 'none';
+  alert(`¡Torneo "${nameInput}" archivado! El torneo actual quedó limpio.`);
+  renderTable();
+  renderHistorial();
+  renderPalmares();
+}
+window.confirmCloseTournament = confirmCloseTournament;
+
 // ─── INIT ──────────────────────────────────────────────────────────────────
 showLoadingOverlay(true);
 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
@@ -1143,6 +1443,12 @@ function renderPalmares() {
   if (!el) return;
 
   const titles = { ...HISTORICAL_TITLES };
+  // Add custom titles from archived tournaments
+  if (state.customTitles) {
+    Object.entries(state.customTitles).forEach(([p, n]) => {
+      titles[p] = (titles[p] || 0) + n;
+    });
+  }
 
   const sorted = Object.entries(titles)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'));

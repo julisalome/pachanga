@@ -953,3 +953,106 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
 .react-btn:hover { background: #2a2a2a; border-color: #555; }
 .react-btn.react-active { background: #1e2e1e; border-color: #3a5a3a; }
 .react-count { font-size: 11px; font-weight: 600; color: var(--green-accent); }
+
+/* ─── COMMENTS ──────────────────────────────────────────────────────────── */
+.history-item-wrap { margin-bottom: 8px; }
+.comments-section {
+  background: #161616;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 10px 14px;
+}
+.comments-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.comment-item { font-size: 13px; color: var(--text); }
+.comment-author { font-weight: 700; color: var(--green-accent); margin-right: 6px; }
+.comment-text { color: #ccc; }
+.comment-empty { font-size: 12px; color: var(--muted); }
+.comment-input-row { display: flex; gap: 6px; }
+.comment-toggle-btn {
+  background: #1e1e1e; border: 1px solid #333;
+  border-radius: 6px; padding: 4px 8px;
+  font-size: 13px; cursor: pointer; color: var(--text);
+  transition: background .15s;
+}
+.comment-toggle-btn:hover { background: #2a2a2a; }
+
+/* ─── COMPARE ───────────────────────────────────────────────────────────── */
+.cmp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 12px; gap: 8px;
+  border-bottom: 1px solid var(--border); margin-bottom: 14px;
+}
+.cmp-player-a, .cmp-player-b {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700; color: var(--text); flex: 1;
+}
+.cmp-player-b { flex-direction: row-reverse; text-align: right; }
+.cmp-vs {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px; font-weight: 700; color: var(--muted);
+  flex-shrink: 0;
+}
+.cmp-section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px;
+  color: var(--muted); margin: 14px 0 8px;
+}
+.cmp-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  grid-template-rows: auto auto;
+  gap: 0 8px; align-items: center; margin-bottom: 6px;
+}
+.cmp-val-a { font-family: 'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; color:var(--green-accent); text-align:right; }
+.cmp-val-b { font-family: 'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; color:#5b9bd5; text-align:left; }
+.cmp-label { grid-column: 1/-1; font-size:11px; color:var(--muted); text-align:center; margin-top:1px; letter-spacing:.4px; text-transform:uppercase; }
+.cmp-bar-wrap { display:flex; height:8px; border-radius:4px; overflow:hidden; background:#2a2a2a; }
+.cmp-bar-a { background: var(--green-accent); transition: width .4s; }
+.cmp-bar-b { background: #5b9bd5; transition: width .4s; }
+.cmp-h2h-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; gap: 8px;
+}
+.cmp-h2h-w { color: #5cb85c; font-weight: 700; font-size: 14px; }
+.cmp-h2h-e { color: #c8b85c; font-weight: 700; font-size: 14px; }
+.cmp-h2h-l { color: var(--danger); font-weight: 700; font-size: 14px; }
+
+/* ─── TOP 5 EFECTIVIDAD ─────────────────────────────────────────────────── */
+.top5-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.top5-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--green-accent);
+}
+.top5-sub {
+  font-size: 11px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.top5-list { display: flex; flex-direction: column; gap: 6px; }
+.top5-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+  cursor: pointer; transition: background .15s;
+}
+.top5-row:hover { background: #1a2a1a; }
+.top5-medal { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; }
+.top5-name { font-size: 13px; font-weight: 600; color: var(--text); min-width: 72px; flex-shrink: 0; }
+.top5-bar-wrap {
+  flex: 1; height: 6px; background: #222;
+  border-radius: 3px; overflow: hidden;
+}
+.top5-bar { height: 100%; background: var(--green-accent); border-radius: 3px; transition: width .4s; }
+.top5-eff {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px; font-weight: 700;
+  color: var(--green-accent); min-width: 44px; text-align: right; flex-shrink: 0;
+}
+.top5-pj { font-size: 11px; color: var(--muted); min-width: 28px; text-align: right; flex-shrink: 0; }
