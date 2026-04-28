@@ -235,6 +235,49 @@
     </div>
   </div>
 
+  <!-- EDIT MATCH MODAL -->
+  <div id="edit-match-modal" class="pin-modal-overlay" style="display:none" onclick="closeEditMatchModal(event)">
+    <div class="edit-match-modal">
+      <div class="edit-match-title">Editar partido</div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Fecha</label>
+        <input type="text" id="edit-match-date" placeholder="ej: 2 mayo 2025">
+      </div>
+      <div class="team-section team-a" style="margin-bottom:8px">
+        <div class="team-header">
+          <span class="team-label team-a-label">⬤ Equipo A</span>
+        </div>
+        <div id="edit-chips-a" class="players-input"></div>
+        <div class="goal-input-row">
+          <label>Goles A</label>
+          <div class="goal-counter">
+            <button class="goal-btn" onclick="changeEditGoal('a',-1)">−</button>
+            <span id="edit-goals-a-display">0</span>
+            <button class="goal-btn" onclick="changeEditGoal('a',1)">+</button>
+          </div>
+          <input type="hidden" id="edit-goals-a" value="0">
+        </div>
+      </div>
+      <div class="vs-divider">VS</div>
+      <div class="team-section team-b" style="margin-bottom:12px">
+        <div class="team-header">
+          <span class="team-label team-b-label">⬤ Equipo B</span>
+        </div>
+        <div id="edit-chips-b" class="players-input"></div>
+        <div class="goal-input-row">
+          <label>Goles B</label>
+          <div class="goal-counter">
+            <button class="goal-btn" onclick="changeEditGoal('b',-1)">−</button>
+            <span id="edit-goals-b-display">0</span>
+            <button class="goal-btn" onclick="changeEditGoal('b',1)">+</button>
+          </div>
+          <input type="hidden" id="edit-goals-b" value="0">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveEditMatch()">Guardar cambios</button>
+    </div>
+  </div>
+
   <!-- PIN MODAL -->
   <div id="pin-modal" class="pin-modal-overlay" style="display:none" onclick="closePinModal(event)">
     <div class="pin-modal">
