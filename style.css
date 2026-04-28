@@ -381,49 +381,52 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
 .palmares-section {
   margin-top: 28px;
   border-top: 1px solid var(--border);
-  padding-top: 20px;
+  padding-top: 22px;
+  padding-bottom: 8px;
 }
 .palmares-title-row {
   display: flex; align-items: center; gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
-.palmares-icon { font-size: 20px; }
 .palmares-heading {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 18px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 1.5px;
+  font-size: 20px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 2px;
   color: var(--gold);
 }
 .palmares-row {
   display: flex; align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
+  padding: 12px 14px;
   border-radius: 8px;
   margin-bottom: 6px;
-  gap: 10px;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  transition: background .15s;
 }
-.palmares-row:first-child {
-  background: #2a2200;
+.palmares-row.palmares-top {
+  background: #221c00;
   border-color: #5a4800;
 }
+.palmares-rank-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; color: var(--muted);
+  min-width: 20px; text-align: center;
+}
+.palmares-row.palmares-top .palmares-rank-num { color: #7a6030; }
 .palmares-player {
-  font-size: 14px; font-weight: 600; color: var(--text);
   flex: 1;
+  font-size: 14px; font-weight: 600; color: var(--text);
 }
-.palmares-row:first-child .palmares-player { color: var(--gold); }
-.palmares-titles {
-  display: flex; align-items: center; gap: 6px;
+.palmares-row.palmares-top .palmares-player { color: var(--gold); }
+.palmares-right {
+  display: flex; align-items: center; gap: 8px;
 }
-.palmares-trophy {
-  font-size: 16px;
-}
+.palmares-trophy-icon { font-size: 18px; }
 .palmares-count {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 16px; font-weight: 700;
-  color: var(--gold);
-  min-width: 20px; text-align: right;
+  font-size: 22px; font-weight: 700;
+  color: var(--gold); min-width: 16px; text-align: center;
 }
 .palmares-label {
   font-size: 11px; color: var(--muted);
@@ -431,47 +434,52 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
 }
 
 /* ─── HISTORIA ─────────────────────────────────────────────────────────── */
-.historia-torneo {
+.historia-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 14px;
 }
-.historia-torneo-header {
-  background: linear-gradient(135deg, #2a2200, #1a1500);
-  padding: 16px 18px;
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 12px;
-  border-bottom: 1px solid #4a3800;
+.historia-header {
+  background: #1c1600;
+  border-bottom: 2px solid #5a4800;
+  padding: 18px 18px 14px;
 }
 .historia-torneo-name {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 18px; font-weight: 700;
-  letter-spacing: .8px; color: var(--gold);
+  font-size: 22px; font-weight: 700;
+  letter-spacing: 1.5px; color: var(--gold);
   text-transform: uppercase;
+  margin-bottom: 2px;
 }
 .historia-torneo-sub {
-  font-size: 12px; color: #8a7a40; margin-top: 2px;
+  font-size: 12px; color: #7a6a30;
+  text-transform: uppercase; letter-spacing: .6px;
 }
-.historia-campeones-badge {
+.historia-campeones-block {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: #161200;
+}
+.historia-campeones-label {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 13px; font-weight: 700;
-  letter-spacing: .5px;
-  background: #3a2e00;
-  border: 1px solid #6a5200;
-  color: var(--gold);
-  padding: 5px 10px; border-radius: 6px;
-  white-space: nowrap;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #7a6a30; margin-bottom: 10px;
 }
-.historia-campeones-chips {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  padding: 14px 18px 0;
+.historia-campeones-grid {
+  display: flex; flex-wrap: wrap; gap: 7px;
 }
 .campeon-chip {
-  background: #2a2200;
-  border: 1px solid #5a4800;
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #2a2000;
+  border: 1px solid #6a5200;
   color: var(--gold);
-  border-radius: 20px; padding: 4px 12px;
-  font-size: 12px; font-weight: 600;
+  border-radius: 6px; padding: 5px 10px;
+  font-size: 13px; font-weight: 600;
+}
+.campeon-chip::before { content: '🏆'; font-size: 12px; }
+.historia-table-wrap {
+  overflow-x: auto;
+  padding: 14px 0 0;
 }
