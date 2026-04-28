@@ -332,8 +332,9 @@ function renderPalmares() {
   const sorted = Object.entries(titles)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'));
 
+  const maxTitles = sorted.length > 0 ? sorted[0][1] : 0;
   el.innerHTML = sorted.map(([name, count], i) => {
-    const isTop = i === 0;
+    const isTop = count === maxTitles;
     const trophies = '🏆'.repeat(Math.min(count, 5));
     return `<div class="palmares-row${isTop ? ' palmares-top' : ''}">
       <span class="palmares-rank-num">${i + 1}</span>
