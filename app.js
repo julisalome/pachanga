@@ -415,20 +415,54 @@ function renderHistorial() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><p>Sin partidos todavía.</p></div>';
     return;
   }
+  const vid = getVisitorId();
   el.innerHTML = state.matches.map(m => {
     const ga = parseInt(m.goalsA), gb = parseInt(m.goalsB);
     const markerA = ga > gb ? '🟢' : ga === gb ? '🟡' : '🔴';
     const markerB = gb > ga ? '🟢' : ga === gb ? '🟡' : '🔴';
-    return `<div class="history-item">
-      <div class="history-match">
-        <div class="history-date">${m.date}</div>
-        <div style="font-size:13px;line-height:1.7">
-          <span style="color:#9ed99e">${markerA} ${m.teamA.join(', ')}</span><br>
-          <span style="color:#9bbede">${markerB} ${m.teamB.join(', ')}</span>
+
+    // Reactions
+    const reacts = m.reactions || {};
+    const reactEmojis = ['🔥','💪','😅','🤣','👏'];
+    const reactHTML = reactEmojis.map(e => {
+      const count = (reacts[e] || []).length;
+      const active = (reacts[e] || []).includes(vid);
+      return `<button class="react-btn ${active ? 'react-active' : ''}" onclick="toggleReaction(${m.id},'${e}')">${e}${count > 0 ? `<span class="react-count">${count}</span>` : ''}</button>`;
+    }).join('');
+
+    // Comments
+    const comments = m.comments || [];
+    const commentsHTML = comments.map(c =>
+      `<div class="comment-item"><span class="comment-author">${c.author}</span><span class="comment-text">${c.text}</span></div>`
+    ).join('');
+
+    return `<div class="history-item-wrap">
+      <div class="history-item">
+        <div class="history-match" style="flex:1">
+          <div class="history-date">${m.date}</div>
+          <div style="font-size:13px;line-height:1.7">
+            <span style="color:#9ed99e">${markerA} ${m.teamA.join(', ')}</span><br>
+            <span style="color:#9bbede">${markerB} ${m.teamB.join(', ')}</span>
+          </div>
+          <div class="react-strip">${reactHTML}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+          <div class="score-badge">${m.goalsA} – ${m.goalsB}</div>
+          <button class="comment-toggle-btn" onclick="toggleComments(${m.id})">💬${comments.length > 0 ? ' ' + comments.length : ''}</button>
+          <div class="hist-actions admin-action" style="display:none">
+            <button class="btn-edit" onclick="editMatch(${m.id})">✏️</button>
+            <button class="btn-danger" onclick="deleteMatch(${m.id})">✕</button>
+          </div>
         </div>
       </div>
-      <div class="score-badge">${m.goalsA} – ${m.goalsB}</div>
-      <button class="btn-danger admin-action" style="display:none" onclick="deleteMatch(${m.id})">✕</button>
+      <div id="comments-${m.id}" class="comments-section" style="display:none">
+        <div class="comments-list">${commentsHTML || '<span class="comment-empty">Sin comentarios todavía.</span>'}</div>
+        <div class="comment-input-row">
+          <input type="text" id="comment-name-${m.id}" placeholder="Tu nombre" style="width:90px;flex-shrink:0">
+          <input type="text" id="comment-input-${m.id}" placeholder="Escribí un comentario..." onkeydown="if(event.key==='Enter')postComment(${m.id})">
+          <button class="btn-outline" style="padding:6px 10px;font-size:12px;flex-shrink:0" onclick="postComment(${m.id})">→</button>
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
