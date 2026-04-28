@@ -64,10 +64,10 @@ function getSortedRows(stats) {
     .filter(([, s]) => s.pj > 0)
     .sort((a, b) => {
       if (b[1].pts !== a[1].pts) return b[1].pts - a[1].pts;
-      const ea = a[1].pj > 0 ? a[1].pts / (a[1].pj * 3) : 0;
-      const eb = b[1].pj > 0 ? b[1].pts / (b[1].pj * 3) : 0;
-      if (eb !== ea) return eb - ea;
-      return (b[1].gf - b[1].gc) - (a[1].gf - a[1].gc);
+      const da = a[1].gf - a[1].gc;
+      const db = b[1].gf - b[1].gc;
+      if (db !== da) return db - da;
+      return a[0].localeCompare(b[0], 'es');
     });
 }
 
@@ -133,28 +133,8 @@ function downloadImage() {
 
 /* ─── SHARE WHATSAPP ─── */
 function shareWhatsapp() {
-  const stats = computeStats();
-  const rows = getSortedRows(stats);
-
-  if (rows.length === 0) {
-    alert('No hay datos en la tabla todavía.');
-    return;
-  }
-
   const now = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
-  let text = `⚽ *TORNEO VIERNES* ⚽\n📅 ${now}\n\n`;
-  text += `*#  Jugador          Pts  PJ  Ef%*\n`;
-  text += `${'─'.repeat(38)}\n`;
-
-  rows.forEach(([name, s], i) => {
-    const eff = s.pj > 0 ? ((s.pts / (s.pj * 3)) * 100).toFixed(1) : '0.0';
-    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}. `;
-    const namePadded = name.padEnd(16).slice(0, 16);
-    text += `${medal} ${namePadded} ${String(s.pts).padStart(3)}  ${String(s.pj).padStart(2)}  ${eff}%\n`;
-  });
-
-  text += `\n_Generado con Torneo Viernes_`;
-
+  const text = `⚽ *Torneo Viernes* — Tabla actualizada al ${now}\nhttps://julisalome.github.io/pachanga/`;
   const url = 'https://wa.me/?text=' + encodeURIComponent(text);
   window.open(url, '_blank');
 }
