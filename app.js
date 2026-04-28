@@ -40,8 +40,9 @@ onSnapshot(DOC_REF, async (snapshot) => {
     if (!state.players) state.players = [];
     if (!state.matches) state.matches = [];
     if (!state.playerData) state.playerData = {};
+    if (!state.currentTournamentName) state.currentTournamentName = 'Torneo Apertura 2025';
   } else {
-    state = { players: [], matches: [], playerData: {} };
+    state = { players: [], matches: [], playerData: {}, currentTournamentName: 'Torneo Apertura 2025' };
   }
   await runMigrationIfNeeded();
   renderTop5();
@@ -242,7 +243,16 @@ function getSortedRows(stats) {
 }
 
 // ─── TABLE ─────────────────────────────────────────────────────────────────
+function updateHeaderTournamentName() {
+  const el = document.getElementById('header-tournament-name');
+  if (!el) return;
+  const name = state.currentTournamentName || 'Torneo Apertura 2025';
+  el.textContent = name;
+  el.style.display = name ? 'block' : 'none';
+}
+
 function renderTable() {
+  updateHeaderTournamentName();
   const stats = computeStats();
   const rows = getSortedRows(stats);
   const tbody = document.getElementById('ranking-body');
@@ -261,7 +271,22 @@ function renderTable() {
     const dgStr = dg > 0 ? '+' + dg : String(dg);
     const effClass = eff >= 66 ? 'eff-high' : eff >= 40 ? 'eff-mid' : 'eff-low';
     const rankClass = s.pts === maxPts ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
-    return `<tr class="${rankClass}">
+
+    // Forma — últimos 5 partidos
+    const playerMatches = state.matches
+      .filter(m => (m.teamA||[]).includes(name) || (m.teamB||[]).includes(name))
+      .slice(0, 5);
+    const formaHTML = playerMatches.map(m => {
+      const inA = (m.teamA||[]).includes(name);
+      const ga = parseInt(m.goalsA)||0, gb = parseInt(m.goalsB)||0;
+      let r;
+      if (inA) r = ga > gb ? 'W' : ga === gb ? 'E' : 'L';
+      else r = gb > ga ? 'W' : ga === gb ? 'E' : 'L';
+      const cls = r==='W'?'forma-w':r==='E'?'forma-e':'forma-l';
+      return `<span class="forma-dot ${cls}">${r}</span>`;
+    }).join('');
+
+    return `<tr class="${rankClass}" style="animation:fadeInRow .3s ease both;animation-delay:${i*40}ms">
       <td class="rank-num">${i + 1}</td>
       <td class="td-left player-name player-link" onclick="openProfile('${escapeName(name)}')">
         <div style="display:flex;align-items:center;gap:8px">
@@ -274,6 +299,7 @@ function renderTable() {
       <td>${s.gf}</td><td>${s.gc}</td>
       <td class="${dgClass}">${dgStr}</td>
       <td><span class="eff-cell ${effClass}">${eff.toFixed(1)}%</span></td>
+      <td><div class="forma-strip">${formaHTML}</div></td>
     </tr>`;
   }).join('');
 }
@@ -1515,6 +1541,7 @@ function renderPalmares() {
     });
   }
 
+  updateHeaderTournamentName();
   const sorted = Object.entries(titles)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'));
 

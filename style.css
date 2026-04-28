@@ -29,6 +29,17 @@ html, body {
   line-height: 1.5;
 }
 
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .4;
+}
+
 .app {
   max-width: 720px;
   margin: 0 auto;
@@ -38,30 +49,46 @@ html, body {
 
 /* HEADER */
 .header {
-  background: linear-gradient(135deg, #162816 0%, #0d1f0d 100%);
-  padding: 22px 24px 18px;
-  border-bottom: 2px solid var(--green-accent);
+  background: linear-gradient(135deg, #0f2010 0%, #0a1a0a 60%, #0d1520 100%);
+  padding: 18px 20px;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, var(--green-accent), #5b9bd5, var(--green-accent)) 1;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  position: relative;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green-accent) 30%, #5b9bd5 70%, transparent);
+  opacity: .6;
 }
 .header-icon {
-  width: 46px; height: 46px;
-  background: var(--green-accent);
-  border-radius: 50%;
+  width: 48px; height: 48px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(92,184,92,.4));
 }
 .header-text h1 {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 24px; font-weight: 700;
-  letter-spacing: 1.5px;
+  font-size: 26px; font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: #fff;
+  line-height: 1;
 }
 .header-text p {
-  font-size: 13px; color: #7aaa7a; margin-top: 2px;
+  font-size: 12px; color: #5a8a5a; margin-top: 3px; letter-spacing: .3px;
+}
+.header-tournament-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 600;
+  color: var(--green-accent);
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  margin-top: 2px !important;
 }
 
 /* NAV */
@@ -205,7 +232,8 @@ td.td-left { text-align: left; padding-left: 12px; }
 
 .pts-cell {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 20px; font-weight: 700; color: var(--gold);
+  font-size: 24px; font-weight: 700; color: var(--gold);
+  text-shadow: 0 0 20px rgba(240,180,41,.3);
 }
 .eff-cell {
   font-size: 12px; padding: 3px 7px;
@@ -393,6 +421,16 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
   border-top: 1px solid var(--border);
   padding-top: 22px;
   padding-bottom: 8px;
+  position: relative;
+}
+.palmares-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(45deg, rgba(240,180,41,.03) 0px, rgba(240,180,41,.03) 1px, transparent 1px, transparent 10px),
+    repeating-linear-gradient(-45deg, rgba(240,180,41,.03) 0px, rgba(240,180,41,.03) 1px, transparent 1px, transparent 10px);
+  pointer-events: none;
+  border-radius: 8px;
 }
 .palmares-title-row {
   display: flex; align-items: center; gap: 10px;
@@ -1056,3 +1094,31 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
   color: var(--green-accent); min-width: 44px; text-align: right; flex-shrink: 0;
 }
 .top5-pj { font-size: 11px; color: var(--muted); min-width: 28px; text-align: right; flex-shrink: 0; }
+
+/* ─── FORMA COLUMN ──────────────────────────────────────────────────────── */
+.forma-strip { display: flex; gap: 2px; align-items: center; justify-content: center; }
+.forma-dot {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px; font-weight: 700;
+  width: 16px; height: 16px;
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.forma-w { background: #1a3a1a; color: #5cb85c; border: 1px solid #2e5a2e; }
+.forma-e { background: #2a2a14; color: #c8b85c; border: 1px solid #4a4a28; }
+.forma-l { background: #3a1414; color: #e05252; border: 1px solid #5a2828; }
+
+/* ─── ROW FADE ANIMATION ────────────────────────────────────────────────── */
+@keyframes fadeInRow {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── SECTION DIVIDER ───────────────────────────────────────────────────── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green-accent) 40%, #5b9bd5 60%, transparent);
+  margin: 24px 0;
+  opacity: .4;
+}
