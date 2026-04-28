@@ -485,3 +485,140 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
   overflow-x: auto;
   padding: 14px 0 0;
 }
+
+/* ─── PLAYER PROFILE PANEL ─────────────────────────────────────────────── */
+.player-link {
+  cursor: pointer;
+  transition: color .15s;
+}
+.player-link:hover { color: var(--green-accent); }
+
+.profile-panel {
+  position: fixed;
+  inset: 0;
+  background: #111;
+  z-index: 500;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.profile-panel.open { transform: translateX(0); }
+
+.profile-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.profile-topbar {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: #161616;
+  position: sticky; top: 0; z-index: 10;
+}
+.profile-back {
+  background: none; border: none;
+  color: var(--green-accent);
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; padding: 0;
+  letter-spacing: .3px;
+}
+.profile-back:hover { color: #9ed99e; }
+
+.profile-hero {
+  display: flex; align-items: center; gap: 16px;
+  padding: 24px 20px 20px;
+  background: linear-gradient(180deg, #162816 0%, #111 100%);
+  border-bottom: 1px solid var(--border);
+}
+.profile-avatar {
+  width: 56px; height: 56px;
+  background: var(--green-accent);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.profile-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #fff;
+}
+.profile-racha-label {
+  font-size: 12px; color: var(--green-accent);
+  margin-top: 3px; font-weight: 600;
+}
+
+.profile-stats-grid {
+  display: flex; flex-wrap: wrap;
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+.profile-stat {
+  flex: 1 0 80px;
+  background: var(--card);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 14px 8px; gap: 4px;
+}
+.profile-stat-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 700; color: var(--text);
+}
+.profile-pts { color: var(--gold) !important; }
+.profile-stat-key {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .6px;
+  color: var(--muted);
+}
+
+.profile-section { padding: 18px 20px 0; }
+.profile-section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px;
+  color: var(--muted); margin-bottom: 12px;
+}
+
+.profile-racha-strip {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 4px;
+}
+.racha-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700;
+  padding: 4px 10px; border-radius: 5px;
+  letter-spacing: .5px;
+}
+.badge-w { background: #1a3a1a; color: #5cb85c; border: 1px solid #2e6a2e; }
+.badge-e { background: #2a2a14; color: #c8b85c; border: 1px solid #5a5a28; }
+.badge-l { background: #3a1a1a; color: #e05252; border: 1px solid #6a2e2e; }
+
+.profile-matches { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.profile-match-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 11px 14px;
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 10px;
+}
+.profile-match-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.profile-match-info {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+.profile-match-date { font-size: 11px; color: var(--muted); }
+.profile-match-teams {
+  font-size: 12px; color: #9cb99c;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.profile-match-score {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 700; color: var(--gold);
+  min-width: 44px; text-align: right; flex-shrink: 0;
+}
+.profile-no-matches { font-size: 13px; color: var(--muted); padding: 8px 0; }

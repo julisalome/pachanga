@@ -43,6 +43,12 @@ onSnapshot(DOC_REF, (snapshot) => {
     state = { players: [], matches: [] };
   }
   renderPalmares();
+  // Re-render profile if open
+  const panel = document.getElementById('profile-panel');
+  if (panel && panel.classList.contains('open')) {
+    const nameEl = panel.querySelector('.profile-name');
+    if (nameEl) renderProfile(nameEl.textContent);
+  }
   const activeView = document.querySelector('.view.active');
   if (activeView) {
     const id = activeView.id.replace('view-', '');
@@ -133,7 +139,7 @@ function renderTable() {
     const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
     return `<tr class="${rankClass}">
       <td class="rank-num">${i + 1}</td>
-      <td class="td-left player-name">${name}</td>
+      <td class="td-left player-name player-link" onclick="openProfile('${escapeName(name)}')">${name}</td>
       <td class="pts-cell">${s.pts}</td>
       <td>${s.pj}</td><td>${s.pg}</td><td>${s.pe}</td><td>${s.pp}</td>
       <td>${s.gf}</td><td>${s.gc}</td>
@@ -310,6 +316,127 @@ async function resetAll() {
 }
 window.resetAll = resetAll;
 
+
+// ─── PLAYER PROFILE ────────────────────────────────────────────────────────
+function openProfile(name) {
+  renderProfile(name);
+  const panel = document.getElementById('profile-panel');
+  panel.classList.add('open');
+}
+window.openProfile = openProfile;
+
+function closeProfile() {
+  document.getElementById('profile-panel').classList.remove('open');
+}
+window.closeProfile = closeProfile;
+
+function getPlayerMatches(name) {
+  return state.matches
+    .filter(m => (m.teamA || []).includes(name) || (m.teamB || []).includes(name))
+    .map(m => {
+      const inA = (m.teamA || []).includes(name);
+      const myTeam = inA ? m.teamA : m.teamB;
+      const rivals = inA ? m.teamB : m.teamA;
+      const gf = parseInt(inA ? m.goalsA : m.goalsB) || 0;
+      const gc = parseInt(inA ? m.goalsB : m.goalsA) || 0;
+      let result;
+      if (gf > gc) result = 'W';
+      else if (gf === gc) result = 'E';
+      else result = 'L';
+      return { date: m.date, result, gf, gc, teammates: myTeam.filter(p => p !== name), rivals };
+    });
+}
+
+function renderProfile(name) {
+  const matches = getPlayerMatches(name);
+  const pj = matches.length;
+  const pg = matches.filter(m => m.result === 'W').length;
+  const pe = matches.filter(m => m.result === 'E').length;
+  const pp = matches.filter(m => m.result === 'L').length;
+  const pts = pg * 3 + pe;
+  const gf = matches.reduce((s, m) => s + m.gf, 0);
+  const gc = matches.reduce((s, m) => s + m.gc, 0);
+  const dg = gf - gc;
+  const eff = pj > 0 ? ((pts / (pj * 3)) * 100).toFixed(1) : '0.0';
+  const effClass = parseFloat(eff) >= 66 ? 'eff-high' : parseFloat(eff) >= 40 ? 'eff-mid' : 'eff-low';
+  const dgClass = dg > 0 ? 'dg-pos' : dg < 0 ? 'dg-neg' : 'dg-zero';
+  const dgStr = dg > 0 ? '+' + dg : String(dg);
+
+  // Racha — últimos 10 partidos
+  const last10 = matches.slice(0, 10);
+  const rachaHTML = last10.map(m => {
+    const cls = m.result === 'W' ? 'badge-w' : m.result === 'E' ? 'badge-e' : 'badge-l';
+    return `<span class="racha-badge ${cls}">${m.result}</span>`;
+  }).join('');
+
+  // Racha actual consecutiva
+  let rachaActual = 0;
+  let rachaType = '';
+  for (const m of matches) {
+    if (rachaActual === 0) { rachaType = m.result; rachaActual = 1; }
+    else if (m.result === rachaType) rachaActual++;
+    else break;
+  }
+  const rachaLabel = rachaActual > 1
+    ? `${rachaActual} ${rachaType === 'W' ? 'victorias' : rachaType === 'E' ? 'empates' : 'derrotas'} seguidas`
+    : '';
+
+  // Historial
+  const histHTML = matches.length === 0
+    ? '<p class="profile-no-matches">Sin partidos registrados.</p>'
+    : matches.map(m => {
+        const resCls = m.result === 'W' ? 'badge-w' : m.result === 'E' ? 'badge-e' : 'badge-l';
+        const resLabel = m.result === 'W' ? 'Victoria' : m.result === 'E' ? 'Empate' : 'Derrota';
+        return `<div class="profile-match-item">
+          <div class="profile-match-left">
+            <span class="racha-badge ${resCls}" style="font-size:11px;padding:3px 8px">${m.result}</span>
+            <div class="profile-match-info">
+              <span class="profile-match-date">${m.date}</span>
+              <span class="profile-match-teams">Con: ${m.teammates.join(', ') || '—'}</span>
+              <span class="profile-match-teams" style="color:#666">vs ${m.rivals.join(', ') || '—'}</span>
+            </div>
+          </div>
+          <div class="profile-match-score">${m.gf} – ${m.gc}</div>
+        </div>`;
+      }).join('');
+
+  document.getElementById('profile-panel').innerHTML = `
+    <div class="profile-inner">
+      <div class="profile-topbar">
+        <button class="profile-back" onclick="closeProfile()">← Volver</button>
+      </div>
+      <div class="profile-hero">
+        <div class="profile-avatar">${name.charAt(0).toUpperCase()}</div>
+        <div>
+          <div class="profile-name">${name}</div>
+          ${rachaLabel ? `<div class="profile-racha-label">${rachaLabel}</div>` : ''}
+        </div>
+      </div>
+
+      <div class="profile-stats-grid">
+        <div class="profile-stat"><span class="profile-stat-val profile-pts">${pts}</span><span class="profile-stat-key">Pts</span></div>
+        <div class="profile-stat"><span class="profile-stat-val">${pj}</span><span class="profile-stat-key">PJ</span></div>
+        <div class="profile-stat"><span class="profile-stat-val" style="color:#5cb85c">${pg}</span><span class="profile-stat-key">PG</span></div>
+        <div class="profile-stat"><span class="profile-stat-val" style="color:#c8b85c">${pe}</span><span class="profile-stat-key">PE</span></div>
+        <div class="profile-stat"><span class="profile-stat-val" style="color:#e05252">${pp}</span><span class="profile-stat-key">PP</span></div>
+        <div class="profile-stat"><span class="profile-stat-val ${dgClass}">${dgStr}</span><span class="profile-stat-key">DG</span></div>
+        <div class="profile-stat"><span class="eff-cell ${effClass}" style="font-size:14px">${eff}%</span><span class="profile-stat-key">Ef.%</span></div>
+      </div>
+
+      ${last10.length > 0 ? `
+      <div class="profile-section">
+        <div class="profile-section-title">Últimos partidos</div>
+        <div class="profile-racha-strip">${rachaHTML}</div>
+      </div>` : ''}
+
+      <div class="profile-section">
+        <div class="profile-section-title">Historial</div>
+        <div class="profile-matches">${histHTML}</div>
+      </div>
+    </div>
+  `;
+}
+window.renderProfile = renderProfile;
 // ─── INIT ──────────────────────────────────────────────────────────────────
 showLoadingOverlay(true);
 
