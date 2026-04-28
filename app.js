@@ -43,6 +43,7 @@ onSnapshot(DOC_REF, (snapshot) => {
     state = { players: [], matches: [] };
   }
   renderPalmares();
+  applyAdminUI();
   // Re-render profile if open
   const panel = document.getElementById('profile-panel');
   if (panel && panel.classList.contains('open')) {
@@ -60,6 +61,97 @@ onSnapshot(DOC_REF, (snapshot) => {
 }, () => {
   showLoadingOverlay(false);
 });
+
+
+// ─── ADMIN / PIN ───────────────────────────────────────────────────────────
+const ADMIN_PIN = '4815162342';
+let isAdmin = false;
+let pinBuffer = '';
+
+function toggleAdmin() {
+  if (isAdmin) {
+    // Lock
+    isAdmin = false;
+    applyAdminUI();
+  } else {
+    pinBuffer = '';
+    updatePinDots();
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('pin-modal').style.display = 'flex';
+  }
+}
+window.toggleAdmin = toggleAdmin;
+
+function closePinModal(e) {
+  if (e.target.id === 'pin-modal') {
+    document.getElementById('pin-modal').style.display = 'none';
+    pinBuffer = '';
+  }
+}
+window.closePinModal = closePinModal;
+
+function pinPress(digit) {
+  if (pinBuffer.length >= ADMIN_PIN.length) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === ADMIN_PIN.length) {
+    setTimeout(() => {
+      if (pinBuffer === ADMIN_PIN) {
+        isAdmin = true;
+        document.getElementById('pin-modal').style.display = 'none';
+        applyAdminUI();
+      } else {
+        document.getElementById('pin-error').style.display = 'block';
+        pinBuffer = '';
+        updatePinDots();
+      }
+    }, 120);
+  }
+}
+window.pinPress = pinPress;
+
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+}
+window.pinDel = pinDel;
+
+function pinClear() {
+  pinBuffer = '';
+  updatePinDots();
+}
+window.pinClear = pinClear;
+
+function updatePinDots() {
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach((d, i) => {
+    d.classList.toggle('filled', i < pinBuffer.length);
+  });
+}
+
+function applyAdminUI() {
+  const btn = document.getElementById('admin-lock-btn');
+  const icon = document.getElementById('admin-lock-icon');
+  const adminItems = document.querySelectorAll('.admin-only');
+  const adminActions = document.querySelectorAll('.admin-action');
+
+  if (isAdmin) {
+    btn.classList.add('admin-active');
+    icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 5-5"/>';
+    adminItems.forEach(el => el.style.display = '');
+    adminActions.forEach(el => el.style.display = '');
+  } else {
+    btn.classList.remove('admin-active');
+    icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+    adminItems.forEach(el => el.style.display = 'none');
+    adminActions.forEach(el => el.style.display = 'none');
+    // If on an admin-only view, go back to tabla
+    const active = document.querySelector('.view.active');
+    if (active && (active.id === 'view-cargar' || active.id === 'view-jugadores')) {
+      showView('tabla', document.querySelector('.nav-btn[data-view="tabla"]'));
+    }
+  }
+}
 
 // ─── NAVIGATION ────────────────────────────────────────────────────────────
 function showView(v, btn) {
@@ -130,13 +222,14 @@ function renderTable() {
     return;
   }
   empty.style.display = 'none';
+  const maxPts = rows.length > 0 ? rows[0][1].pts : 0;
   tbody.innerHTML = rows.map(([name, s], i) => {
     const eff = s.pj > 0 ? (s.pts / (s.pj * 3)) * 100 : 0;
     const dg = s.gf - s.gc;
     const dgClass = dg > 0 ? 'dg-pos' : dg < 0 ? 'dg-neg' : 'dg-zero';
     const dgStr = dg > 0 ? '+' + dg : String(dg);
     const effClass = eff >= 66 ? 'eff-high' : eff >= 40 ? 'eff-mid' : 'eff-low';
-    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+    const rankClass = s.pts === maxPts ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
     return `<tr class="${rankClass}">
       <td class="rank-num">${i + 1}</td>
       <td class="td-left player-name player-link" onclick="openProfile('${escapeName(name)}')">${name}</td>
@@ -265,7 +358,7 @@ function renderHistorial() {
         </div>
       </div>
       <div class="score-badge">${m.goalsA} – ${m.goalsB}</div>
-      <button class="btn-danger" onclick="deleteMatch(${m.id})">✕</button>
+      <button class="btn-danger admin-action" style="display:none" onclick="deleteMatch(${m.id})">✕</button>
     </div>`;
   }).join('');
 }
@@ -439,6 +532,7 @@ function renderProfile(name) {
 window.renderProfile = renderProfile;
 // ─── INIT ──────────────────────────────────────────────────────────────────
 showLoadingOverlay(true);
+document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
 
 // ─── PALMARÉS ──────────────────────────────────────────────────────────────
 const HISTORICAL_TITLES = {
