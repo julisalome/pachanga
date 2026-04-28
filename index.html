@@ -143,9 +143,9 @@
         <div class="historia-campeones-block">
           <div class="historia-campeones-label">Campeones</div>
           <div class="historia-campeones-grid">
-            <span class="campeon-chip">Fdm</span>
+            <span class="campeon-chip">Franco DM</span>
             <span class="campeon-chip">Ian</span>
-            <span class="campeon-chip">Juli</span>
+            <span class="campeon-chip">Juli M</span>
             <span class="campeon-chip">Lucas</span>
             <span class="campeon-chip">Roman</span>
             <span class="campeon-chip">Toti</span>
@@ -161,9 +161,9 @@
               </tr>
             </thead>
             <tbody>
-              <tr class="rank-1"><td class="rank-num">1</td><td class="td-left player-name player-link" onclick="openProfile('Fdm')">Fdm</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
+              <tr class="rank-1"><td class="rank-num">1</td><td class="td-left player-name player-link" onclick="openProfile('Fdm')">Franco DM</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
               <tr class="rank-1"><td class="rank-num">2</td><td class="td-left player-name player-link" onclick="openProfile('Ian')">Ian</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
-              <tr class="rank-1"><td class="rank-num">3</td><td class="td-left player-name player-link" onclick="openProfile('Juli')">Juli</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
+              <tr class="rank-1"><td class="rank-num">3</td><td class="td-left player-name player-link" onclick="openProfile('Juli')">Juli M</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
               <tr class="rank-1"><td class="rank-num">4</td><td class="td-left player-name player-link" onclick="openProfile('Roma')">Roma</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
               <tr class="rank-1"><td class="rank-num">5</td><td class="td-left player-name player-link" onclick="openProfile('Toti')">Toti</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
               <tr class="rank-1"><td class="rank-num">6</td><td class="td-left player-name player-link" onclick="openProfile('Lucas')">Lucas</td><td class="pts-cell">18</td><td>8</td><td>6</td><td>0</td><td>2</td><td><span class="eff-cell eff-high">75.0%</span></td></tr>
@@ -184,20 +184,49 @@
     </div>
 
     <!-- JUGADORES -->
-    <div id="view-jugadores" class="view">
-      <div class="form-card">
-        <h3>Jugadores del torneo</h3>
-        <p class="form-hint">Agregá o eliminá jugadores del plantel.</p>
-        <div id="roster-list-wrap" class="roster-list"></div>
-        <div class="add-player-row">
-          <input type="text" id="new-player-name" placeholder="Nombre del jugador" onkeydown="if(event.key==='Enter')addPlayer()">
-          <button class="btn btn-outline" onclick="addPlayer()">+ Agregar</button>
+    <div id="view-jugadores" class="view" style="padding:0">
+      <div id="players-grid"></div>
+      <div style="padding:0 20px">
+        <div class="form-card" style="margin-top:16px">
+          <h3>Agregar jugador</h3>
+          <div class="add-player-row">
+            <input type="text" id="new-player-name" placeholder="Nombre del jugador" onkeydown="if(event.key==='Enter')addPlayer()">
+            <button class="btn btn-outline" onclick="addPlayer()">+ Agregar</button>
+          </div>
+        </div>
+        <div class="form-card" style="margin-top:0">
+          <h3 style="color:#e05252">Zona peligrosa</h3>
+          <p class="form-hint" style="margin-bottom:12px">Borra todos los datos del torneo. No se puede deshacer.</p>
+          <button class="btn btn-danger-full" onclick="resetAll()">Resetear torneo</button>
         </div>
       </div>
-      <div class="form-card" style="margin-top:0">
-        <h3 style="color:#e05252">Zona peligrosa</h3>
-        <p class="form-hint" style="margin-bottom:12px">Borra todos los datos del torneo. No se puede deshacer.</p>
-        <button class="btn btn-danger-full" onclick="resetAll()">Resetear torneo</button>
+    </div>
+
+    <!-- PLAYER EDIT PANEL -->
+    <div id="player-edit-panel" class="profile-panel">
+      <div class="profile-inner">
+        <div class="profile-topbar">
+          <button class="profile-back" onclick="closePlayerEdit()">← Volver</button>
+          <span id="player-edit-title" style="font-size:14px;font-weight:600;color:var(--text);margin-left:12px"></span>
+        </div>
+        <div style="padding:24px 20px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+            <div id="edit-avatar-preview" class="edit-avatar-preview" onclick="document.getElementById('edit-photo-input').click()"></div>
+            <input type="file" id="edit-photo-input" accept="image/*" style="display:none" onchange="handlePhotoSelect(event)">
+            <button class="btn btn-outline" style="font-size:12px;padding:7px 16px" onclick="document.getElementById('edit-photo-input').click()">
+              📷 Cambiar foto
+            </button>
+          </div>
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" id="edit-player-name" placeholder="Nombre del jugador">
+          </div>
+          <button class="btn btn-primary" onclick="savePlayerEdit()">Guardar cambios</button>
+          <div id="edit-msg" class="msg"></div>
+          <div style="border-top:1px solid var(--border);padding-top:16px">
+            <button class="btn btn-danger-full" onclick="deletePlayerFromEdit()">Eliminar jugador</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

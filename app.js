@@ -33,7 +33,7 @@ async function saveToFirestore() {
   }
 }
 
-onSnapshot(DOC_REF, (snapshot) => {
+onSnapshot(DOC_REF, async (snapshot) => {
   showLoadingOverlay(false);
   if (snapshot.exists()) {
     state = snapshot.data();
@@ -43,6 +43,7 @@ onSnapshot(DOC_REF, (snapshot) => {
   } else {
     state = { players: [], matches: [], playerData: {} };
   }
+  await runMigrationIfNeeded();
   renderPalmares();
   applyAdminUI();
   // Re-render profile if open
@@ -721,6 +722,55 @@ function showEditMsg(type, txt) {
   el._t = setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
 
+
+// ─── ONE-TIME MIGRATION: rename players in Firebase ────────────────────────
+const NAME_MIGRATION = {
+  'Fdm':    'Franco DM',
+  'Juli':   'Juli M',
+  'Roma':   'Roman',
+  'Tincho': 'Martin',
+  'Manu':   'Manu H',
+};
+
+async function runMigrationIfNeeded() {
+  // Check if migration already ran
+  if (state.migrationV1) return;
+
+  let changed = false;
+
+  // Migrate players array
+  state.players = state.players.map(p => {
+    if (NAME_MIGRATION[p]) { changed = true; return NAME_MIGRATION[p]; }
+    return p;
+  });
+
+  // Migrate matches
+  state.matches = state.matches.map(m => {
+    const newA = (m.teamA || []).map(p => NAME_MIGRATION[p] || p);
+    const newB = (m.teamB || []).map(p => NAME_MIGRATION[p] || p);
+    if (JSON.stringify(newA) !== JSON.stringify(m.teamA) ||
+        JSON.stringify(newB) !== JSON.stringify(m.teamB)) changed = true;
+    return { ...m, teamA: newA, teamB: newB };
+  });
+
+  // Migrate playerData keys
+  if (state.playerData) {
+    const newPlayerData = {};
+    for (const [k, v] of Object.entries(state.playerData)) {
+      const newKey = NAME_MIGRATION[k] || k;
+      newPlayerData[newKey] = v;
+      if (newKey !== k) changed = true;
+    }
+    state.playerData = newPlayerData;
+  }
+
+  if (changed || !state.migrationV1) {
+    state.migrationV1 = true;
+    await saveToFirestore();
+    console.log('Migration v1 complete');
+  }
+}
+
 // ─── INIT ──────────────────────────────────────────────────────────────────
 showLoadingOverlay(true);
 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
@@ -731,22 +781,22 @@ const HISTORICAL_TOURNAMENTS = [
   {
     name: 'Torneo Inicial 2025',
     champion: true,
-    champions: ['Fdm', 'Ian', 'Juli', 'Lucas', 'Roman', 'Toti'],
+    champions: ['Franco DM', 'Ian', 'Juli M', 'Lucas', 'Roman', 'Toti'],
     standings: {
-      'Fdm':    { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
+      'Franco DM':    { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
       'Ian':    { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
-      'Juli':   { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
-      'Roma':   { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
+      'Juli M':   { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
+      'Roman':   { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
       'Toti':   { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
       'Lucas':  { pts: 18, pj:  8, pg: 6, pe: 0, pp: 2 },
       'Renga':  { pts: 15, pj:  6, pg: 5, pe: 0, pp: 1 },
       'Pocho':  { pts: 15, pj:  9, pg: 5, pe: 0, pp: 4 },
-      'Tincho': { pts: 15, pj: 10, pg: 5, pe: 0, pp: 5 },
+      'Martin': { pts: 15, pj: 10, pg: 5, pe: 0, pp: 5 },
       'Gonzi':  { pts: 12, pj: 10, pg: 4, pe: 0, pp: 6 },
       'Felo':   { pts:  9, pj:  6, pg: 3, pe: 0, pp: 3 },
       'Lolo':   { pts:  6, pj:  6, pg: 2, pe: 0, pp: 4 },
       'Licho':  { pts:  6, pj:  8, pg: 2, pe: 0, pp: 6 },
-      'Manu':   { pts:  6, pj:  8, pg: 2, pe: 0, pp: 6 },
+      'Manu H':   { pts:  6, pj:  8, pg: 2, pe: 0, pp: 6 },
       'Mati':   { pts:  3, pj:  2, pg: 1, pe: 0, pp: 1 },
       'Jano':   { pts:  0, pj:  2, pg: 0, pe: 0, pp: 2 },
     }
@@ -754,9 +804,9 @@ const HISTORICAL_TOURNAMENTS = [
 ];
 // ─── PALMARÉS ──────────────────────────────────────────────────────────────
 const HISTORICAL_TITLES = {
-  'Fdm':   1,
+  'Franco DM':   1,
   'Ian':   1,
-  'Juli':  1,
+  'Juli M':  1,
   'Lucas': 1,
   'Roman': 1,
   'Toti':  1,
