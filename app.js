@@ -16,7 +16,7 @@ const db = getFirestore(firebaseApp);
 const DOC_REF = doc(db, "torneo", "data");
 
 // ─── STATE ─────────────────────────────────────────────────────────────────
-let state = { players: [], matches: [] };
+let state = { players: [], matches: [], playerData: {} };
 let selA = new Set();
 let selB = new Set();
 
@@ -39,8 +39,9 @@ onSnapshot(DOC_REF, (snapshot) => {
     state = snapshot.data();
     if (!state.players) state.players = [];
     if (!state.matches) state.matches = [];
+    if (!state.playerData) state.playerData = {};
   } else {
-    state = { players: [], matches: [] };
+    state = { players: [], matches: [], playerData: {} };
   }
   renderPalmares();
   applyAdminUI();
@@ -49,6 +50,12 @@ onSnapshot(DOC_REF, (snapshot) => {
   if (panel && panel.classList.contains('open')) {
     const nameEl = panel.querySelector('.profile-name');
     if (nameEl) renderProfile(nameEl.textContent);
+  }
+  // Re-render player edit if open
+  const editPanel = document.getElementById('player-edit-panel');
+  if (editPanel && editPanel.classList.contains('open') && editingPlayer) {
+    // just refresh title
+    document.getElementById('player-edit-title').textContent = getPlayerDisplayName(editingPlayer);
   }
   const activeView = document.querySelector('.view.active');
   if (activeView) {
@@ -153,6 +160,26 @@ function applyAdminUI() {
   }
 }
 
+
+// ─── PLAYER DATA HELPERS ───────────────────────────────────────────────────
+function getPlayerPhoto(name) {
+  return state.playerData[name] && state.playerData[name].photo
+    ? state.playerData[name].photo : null;
+}
+function getPlayerDisplayName(name) {
+  return (state.playerData[name] && state.playerData[name].displayName)
+    ? state.playerData[name].displayName : name;
+}
+function avatarHTML(name, size = 44) {
+  const photo = getPlayerPhoto(name);
+  const initials = name.charAt(0).toUpperCase();
+  if (photo) {
+    return `<img src="${photo}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0" alt="${name}">`;
+  }
+  const fs = Math.round(size * 0.4);
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:var(--green-accent);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:${fs}px;font-weight:700;color:#fff;flex-shrink:0">${initials}</div>`;
+}
+
 // ─── NAVIGATION ────────────────────────────────────────────────────────────
 function showView(v, btn) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -232,7 +259,12 @@ function renderTable() {
     const rankClass = s.pts === maxPts ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
     return `<tr class="${rankClass}">
       <td class="rank-num">${i + 1}</td>
-      <td class="td-left player-name player-link" onclick="openProfile('${escapeName(name)}')">${name}</td>
+      <td class="td-left player-name player-link" onclick="openProfile('${escapeName(name)}')">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${avatarHTML(name, 26)}
+          <span>${getPlayerDisplayName(name)}</span>
+        </div>
+      </td>
       <td class="pts-cell">${s.pts}</td>
       <td>${s.pj}</td><td>${s.pg}</td><td>${s.pe}</td><td>${s.pp}</td>
       <td>${s.gf}</td><td>${s.gc}</td>
@@ -372,14 +404,25 @@ window.deleteMatch = deleteMatch;
 
 // ─── JUGADORES ─────────────────────────────────────────────────────────────
 function renderRoster() {
-  const el = document.getElementById('roster-list-wrap');
+  const el = document.getElementById('players-grid');
+  if (!el) return;
   if (state.players.length === 0) {
-    el.innerHTML = '<span style="font-size:12px;color:#555">Sin jugadores cargados todavía.</span>';
+    el.innerHTML = '<p style="font-size:13px;color:#555;padding:8px 20px">Sin jugadores. Agregalos abajo.</p>';
     return;
   }
-  el.innerHTML = state.players.map(p =>
-    `<div class="roster-chip">${p}<button onclick="removePlayer('${escapeName(p)}')" title="Eliminar">×</button></div>`
-  ).join('');
+  const stats = computeStats();
+  el.innerHTML = state.players.map(p => {
+    const s = stats[p] || { pts: 0, pj: 0 };
+    const dn = getPlayerDisplayName(p);
+    return `<div class="player-card" onclick="openPlayerEdit('${escapeName(p)}')">
+      <div class="player-card-avatar">${avatarHTML(p, 52)}</div>
+      <div class="player-card-info">
+        <div class="player-card-name">${dn}</div>
+        <div class="player-card-stats">${s.pts} pts · ${s.pj} PJ</div>
+      </div>
+      <div class="player-card-arrow">›</div>
+    </div>`;
+  }).join('');
 }
 
 async function addPlayer() {
@@ -493,19 +536,50 @@ function renderProfile(name) {
         </div>`;
       }).join('');
 
+  // Titles & historical tournaments
+  const playerTitles = HISTORICAL_TITLES[name] || 0;
+  const playerTournaments = HISTORICAL_TOURNAMENTS.filter(t => t.standings[name]);
+
+  const titlesHTML = playerTitles > 0
+    ? `<div class="profile-titles-row">${Array(playerTitles).fill('🏆').join('')} <span class="profile-titles-label">${playerTitles} título${playerTitles > 1 ? 's' : ''}</span></div>`
+    : '';
+
+  // Historical tournament stats blocks
+  const histTournamentHTML = playerTournaments.map(t => {
+    const s = t.standings[name];
+    const isChamp = t.champions.includes(name);
+    const teff = s.pj > 0 ? ((s.pts / (s.pj * 3)) * 100).toFixed(1) : '0.0';
+    const teffClass = parseFloat(teff) >= 66 ? 'eff-high' : parseFloat(teff) >= 40 ? 'eff-mid' : 'eff-low';
+    return `<div class="profile-hist-tournament">
+      <div class="profile-hist-tournament-name">
+        ${isChamp ? '🏆 ' : ''}${t.name}
+      </div>
+      <div class="profile-hist-stats">
+        <div class="profile-hist-stat"><span class="profile-hist-val" style="color:var(--gold)">${s.pts}</span><span class="profile-stat-key">Pts</span></div>
+        <div class="profile-hist-stat"><span class="profile-hist-val">${s.pj}</span><span class="profile-stat-key">PJ</span></div>
+        <div class="profile-hist-stat"><span class="profile-hist-val" style="color:#5cb85c">${s.pg}</span><span class="profile-stat-key">PG</span></div>
+        <div class="profile-hist-stat"><span class="profile-hist-val" style="color:#c8b85c">${s.pe}</span><span class="profile-stat-key">PE</span></div>
+        <div class="profile-hist-stat"><span class="profile-hist-val" style="color:#e05252">${s.pp}</span><span class="profile-stat-key">PP</span></div>
+        <div class="profile-hist-stat"><span class="eff-cell ${teffClass}" style="font-size:12px">${teff}%</span><span class="profile-stat-key">Ef.%</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
   document.getElementById('profile-panel').innerHTML = `
     <div class="profile-inner">
       <div class="profile-topbar">
         <button class="profile-back" onclick="closeProfile()">← Volver</button>
       </div>
       <div class="profile-hero">
-        <div class="profile-avatar">${name.charAt(0).toUpperCase()}</div>
+        ${avatarHTML(name, 56)}
         <div>
           <div class="profile-name">${name}</div>
+          ${titlesHTML}
           ${rachaLabel ? `<div class="profile-racha-label">${rachaLabel}</div>` : ''}
         </div>
       </div>
 
+      <div class="profile-section-header">Torneo en curso</div>
       <div class="profile-stats-grid">
         <div class="profile-stat"><span class="profile-stat-val profile-pts">${pts}</span><span class="profile-stat-key">Pts</span></div>
         <div class="profile-stat"><span class="profile-stat-val">${pj}</span><span class="profile-stat-key">PJ</span></div>
@@ -518,30 +592,174 @@ function renderProfile(name) {
 
       ${last10.length > 0 ? `
       <div class="profile-section">
-        <div class="profile-section-title">Últimos partidos</div>
+        <div class="profile-section-title">Racha reciente</div>
         <div class="profile-racha-strip">${rachaHTML}</div>
       </div>` : ''}
 
       <div class="profile-section">
-        <div class="profile-section-title">Historial</div>
+        <div class="profile-section-title">Partidos del torneo actual</div>
         <div class="profile-matches">${histHTML}</div>
       </div>
+
+      ${histTournamentHTML ? `
+      <div class="profile-section" style="margin-top:8px">
+        <div class="profile-section-title">Historial de torneos</div>
+        ${histTournamentHTML}
+      </div>` : ''}
     </div>
   `;
 }
 window.renderProfile = renderProfile;
+
+// ─── PLAYER EDIT ───────────────────────────────────────────────────────────
+let editingPlayer = null;
+let editingPhotoData = null;
+
+function openPlayerEdit(name) {
+  editingPlayer = name;
+  editingPhotoData = null;
+  const panel = document.getElementById('player-edit-panel');
+  const nameInput = document.getElementById('edit-player-name');
+  const titleEl = document.getElementById('player-edit-title');
+  const preview = document.getElementById('edit-avatar-preview');
+  const msg = document.getElementById('edit-msg');
+
+  nameInput.value = getPlayerDisplayName(name);
+  titleEl.textContent = getPlayerDisplayName(name);
+  msg.style.display = 'none';
+
+  // Show current photo or avatar
+  const photo = getPlayerPhoto(name);
+  if (photo) {
+    preview.innerHTML = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    preview.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:var(--green-accent);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:700;color:#fff">${name.charAt(0).toUpperCase()}</div>`;
+  }
+
+  panel.classList.add('open');
+}
+window.openPlayerEdit = openPlayerEdit;
+
+function closePlayerEdit() {
+  document.getElementById('player-edit-panel').classList.remove('open');
+  editingPlayer = null;
+  editingPhotoData = null;
+}
+window.closePlayerEdit = closePlayerEdit;
+
+function handlePhotoSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // Compress image using canvas
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 200;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+      else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      editingPhotoData = canvas.toDataURL('image/jpeg', 0.75);
+      // Update preview
+      document.getElementById('edit-avatar-preview').innerHTML =
+        `<img src="${editingPhotoData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+window.handlePhotoSelect = handlePhotoSelect;
+
+async function savePlayerEdit() {
+  if (!editingPlayer) return;
+  const newName = document.getElementById('edit-player-name').value.trim();
+  if (!newName) { showEditMsg('error', 'El nombre no puede estar vacío.'); return; }
+
+  // Check name conflict (only if name changed)
+  const oldDisplayName = getPlayerDisplayName(editingPlayer);
+  if (newName !== oldDisplayName) {
+    const conflict = state.players.some(p =>
+      p !== editingPlayer && getPlayerDisplayName(p).toLowerCase() === newName.toLowerCase()
+    );
+    if (conflict) { showEditMsg('error', 'Ya existe un jugador con ese nombre.'); return; }
+  }
+
+  if (!state.playerData) state.playerData = {};
+  if (!state.playerData[editingPlayer]) state.playerData[editingPlayer] = {};
+
+  state.playerData[editingPlayer].displayName = newName;
+  if (editingPhotoData) state.playerData[editingPlayer].photo = editingPhotoData;
+
+  await saveToFirestore();
+  showEditMsg('ok', '¡Guardado!');
+  document.getElementById('player-edit-title').textContent = newName;
+  renderRoster();
+  renderTable();
+}
+window.savePlayerEdit = savePlayerEdit;
+
+async function deletePlayerFromEdit() {
+  if (!editingPlayer) return;
+  if (!confirm(`¿Eliminar a ${getPlayerDisplayName(editingPlayer)} del plantel?`)) return;
+  state.players = state.players.filter(p => p !== editingPlayer);
+  if (state.playerData) delete state.playerData[editingPlayer];
+  await saveToFirestore();
+  closePlayerEdit();
+}
+window.deletePlayerFromEdit = deletePlayerFromEdit;
+
+function showEditMsg(type, txt) {
+  const el = document.getElementById('edit-msg');
+  el.className = 'msg ' + (type === 'ok' ? 'ok' : 'err');
+  el.textContent = txt;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
 // ─── INIT ──────────────────────────────────────────────────────────────────
 showLoadingOverlay(true);
 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
 
+
+// ─── HISTORICAL DATA (Torneo Inicial 2025) ─────────────────────────────────
+const HISTORICAL_TOURNAMENTS = [
+  {
+    name: 'Torneo Inicial 2025',
+    champion: true,
+    champions: ['Fdm', 'Ian', 'Juli', 'Lucas', 'Roman', 'Toti'],
+    standings: {
+      'Fdm':    { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
+      'Ian':    { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
+      'Juli':   { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
+      'Roma':   { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
+      'Toti':   { pts: 18, pj: 10, pg: 6, pe: 0, pp: 4 },
+      'Lucas':  { pts: 18, pj:  8, pg: 6, pe: 0, pp: 2 },
+      'Renga':  { pts: 15, pj:  6, pg: 5, pe: 0, pp: 1 },
+      'Pocho':  { pts: 15, pj:  9, pg: 5, pe: 0, pp: 4 },
+      'Tincho': { pts: 15, pj: 10, pg: 5, pe: 0, pp: 5 },
+      'Gonzi':  { pts: 12, pj: 10, pg: 4, pe: 0, pp: 6 },
+      'Felo':   { pts:  9, pj:  6, pg: 3, pe: 0, pp: 3 },
+      'Lolo':   { pts:  6, pj:  6, pg: 2, pe: 0, pp: 4 },
+      'Licho':  { pts:  6, pj:  8, pg: 2, pe: 0, pp: 6 },
+      'Manu':   { pts:  6, pj:  8, pg: 2, pe: 0, pp: 6 },
+      'Mati':   { pts:  3, pj:  2, pg: 1, pe: 0, pp: 1 },
+      'Jano':   { pts:  0, pj:  2, pg: 0, pe: 0, pp: 2 },
+    }
+  }
+];
 // ─── PALMARÉS ──────────────────────────────────────────────────────────────
 const HISTORICAL_TITLES = {
-  'Franco DM': 1,
-  'Ian':       1,
-  'Juli M':    1,
-  'Lucas':     1,
-  'Roman':     1,
-  'Toti':      1,
+  'Fdm':   1,
+  'Ian':   1,
+  'Juli':  1,
+  'Lucas': 1,
+  'Roman': 1,
+  'Toti':  1,
 };
 
 function renderPalmares() {
