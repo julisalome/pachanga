@@ -829,6 +829,23 @@ function renderProfile(name) {
       }).join('')}
     </div>`;
 
+  // ── All-time totals ──
+  const histTotals = (() => {
+    let tpj = pj, tpg = pg, tpe = pe, tpp = pp, tpts = pts, tgf = gf, tgc = gc;
+    HISTORICAL_TOURNAMENTS.forEach(t => {
+      const s = t.standings[name];
+      if (s) { tpj += s.pj; tpg += s.pg; tpe += s.pe; tpp += s.pp; tpts += s.pts; }
+    });
+    const tdg = tgf - tgc;
+    const teff = tpj > 0 ? ((tpts / (tpj * 3)) * 100).toFixed(1) : '0.0';
+    const teffClass = parseFloat(teff) >= 66 ? 'eff-high' : parseFloat(teff) >= 40 ? 'eff-mid' : 'eff-low';
+    const tdgClass = tdg > 0 ? 'dg-pos' : tdg < 0 ? 'dg-neg' : 'dg-zero';
+    const tdgStr = tdg > 0 ? '+' + tdg : String(tdg);
+    return { tpj, tpg, tpe, tpp, tpts, tgf, tgc, tdg, tdgStr, teff, teffClass, tdgClass };
+  })();
+
+  const hasHistory = HISTORICAL_TOURNAMENTS.some(t => t.standings[name]);
+
   document.getElementById('profile-panel').innerHTML = `
     <div class="profile-inner">
       <div class="profile-topbar">
@@ -842,6 +859,18 @@ function renderProfile(name) {
           ${rachaLabel ? `<div class="profile-racha-label">${rachaLabel}</div>` : ''}
         </div>
       </div>
+
+      ${hasHistory ? `
+      <div class="profile-section-header" style="background:#1a1600;color:#c8a830;border-color:#3a3000">Historial total</div>
+      <div class="profile-stats-grid" style="background:#2a2400">
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:var(--gold)">${histTotals.tpts}</span><span class="profile-stat-key">Pts</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val">${histTotals.tpj}</span><span class="profile-stat-key">PJ</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#5cb85c">${histTotals.tpg}</span><span class="profile-stat-key">PG</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#c8b85c">${histTotals.tpe}</span><span class="profile-stat-key">PE</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#e05252">${histTotals.tpp}</span><span class="profile-stat-key">PP</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val ${histTotals.tdgClass}">${histTotals.tdgStr}</span><span class="profile-stat-key">DG</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="eff-cell ${histTotals.teffClass}" style="font-size:13px">${histTotals.teff}%</span><span class="profile-stat-key">Ef.%</span></div>
+      </div>` : ''}
 
       <div class="profile-section-header">Torneo en curso</div>
       <div class="profile-stats-grid">
@@ -865,11 +894,14 @@ function renderProfile(name) {
         <div class="profile-matches">${histHTML}</div>
       </div>
 
-      ${histTournamentHTML ? `
+      ${hasHistory ? `
       <div class="profile-section" style="margin-top:8px">
-        <div class="profile-section-title">Historial de torneos</div>
+        <div class="profile-section-title">Torneos anteriores</div>
         ${histTournamentHTML}
       </div>` : ''}
+
+      ${compHTML}
+      ${rivalsHTML}
     </div>
   `;
 }
