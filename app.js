@@ -1286,19 +1286,50 @@ function runCompare() {
 
   const dnA = getPlayerDisplayName(nameA), dnB = getPlayerDisplayName(nameB);
 
+  // Historical totals
+  function histTotal(name, curr) {
+    let tpts = curr.pts, tpj = curr.pj, tpg = curr.pg, tpe = curr.pe, tpp = curr.pp;
+    HISTORICAL_TOURNAMENTS.forEach(t => {
+      const s = t.standings[name];
+      if (s) { tpts += s.pts; tpj += s.pj; tpg += s.pg; tpe += s.pe; tpp += s.pp; }
+    });
+    if (state.archivedTournaments) {
+      state.archivedTournaments.forEach(t => {
+        const s = t.standings && t.standings[name];
+        if (s) { tpts += s.pts; tpj += s.pj; tpg += s.pg; tpe += s.pe; tpp += s.pp; }
+      });
+    }
+    const teff = tpj > 0 ? ((tpts/(tpj*3))*100).toFixed(1) : '0.0';
+    return { tpts, tpj, tpg, tpe, tpp, teff };
+  }
+
+  const hA = histTotal(nameA, sA);
+  const hB = histTotal(nameB, sB);
+  const hasHist = hA.tpj > sA.pj || hB.tpj > sB.pj;
+
   document.getElementById('compare-body').innerHTML = `
     <div class="cmp-header">
       <div class="cmp-player-a">${avatarHTML(nameA,40)}<span>${dnA}</span></div>
       <div class="cmp-vs">VS</div>
       <div class="cmp-player-b">${avatarHTML(nameB,40)}<span>${dnB}</span></div>
     </div>
+
     <div class="cmp-section-title">Torneo actual</div>
     ${bar(sA.pts, sB.pts, 'Pts')}
     ${bar(sA.pj, sB.pj, 'PJ')}
     ${bar(sA.pg, sB.pg, 'PG')}
     ${bar(sA.pp, sB.pp, 'PP')}
     ${bar(effA, effB, 'Ef.%')}
-    ${bar(sA.gf-sA.gc, sB.gf-sB.gc, 'DG')}
+    ${bar(sA.gf - sA.gc, sB.gf - sB.gc, 'DG')}
+
+    ${hasHist ? `
+    <div class="cmp-section-title" style="color:#c8a830">Historial total</div>
+    ${bar(hA.tpts, hB.tpts, 'Pts totales')}
+    ${bar(hA.tpj, hB.tpj, 'PJ totales')}
+    ${bar(hA.tpg, hB.tpg, 'PG totales')}
+    ${bar(hA.tpp, hB.tpp, 'PP totales')}
+    ${bar(hA.teff, hB.teff, 'Ef.% histórica')}
+    ` : ''}
 
     ${h2h.togetherPJ > 0 ? `
     <div class="cmp-section-title">Juntos (${h2h.togetherPJ} partidos)</div>
