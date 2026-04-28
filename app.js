@@ -1,21 +1,60 @@
-const STORAGE_KEY = 'torneo_viernes_v1';
+// ─── FIREBASE CONFIG ───────────────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-function load() {
-  try {
-    const d = localStorage.getItem(STORAGE_KEY);
-    return d ? JSON.parse(d) : { players: [], matches: [] };
-  } catch (e) { return { players: [], matches: [] }; }
-}
-function save(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+const firebaseConfig = {
+  apiKey: "AIzaSyB8cTy6t32F-KiZloUF2SxCN3nf3Q0wTSs",
+  authDomain: "pachanga-a17d4.firebaseapp.com",
+  projectId: "pachanga-a17d4",
+  storageBucket: "pachanga-a17d4.firebasestorage.app",
+  messagingSenderId: "114380385622",
+  appId: "1:114380385622:web:1c652f5ab192fc11e13af7"
+};
 
-let state = load();
-if (!state.players) state.players = [];
-if (!state.matches) state.matches = [];
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const DOC_REF = doc(db, "torneo", "data");
 
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let state = { players: [], matches: [] };
 let selA = new Set();
 let selB = new Set();
 
-/* ─── NAVIGATION ─── */
+// ─── FIRESTORE ─────────────────────────────────────────────────────────────
+function showLoadingOverlay(show) {
+  document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+}
+
+async function saveToFirestore() {
+  try {
+    await setDoc(DOC_REF, state);
+  } catch (e) {
+    alert("Error al guardar. Verificá tu conexión a internet.");
+  }
+}
+
+onSnapshot(DOC_REF, (snapshot) => {
+  showLoadingOverlay(false);
+  if (snapshot.exists()) {
+    state = snapshot.data();
+    if (!state.players) state.players = [];
+    if (!state.matches) state.matches = [];
+  } else {
+    state = { players: [], matches: [] };
+  }
+  const activeView = document.querySelector('.view.active');
+  if (activeView) {
+    const id = activeView.id.replace('view-', '');
+    if (id === 'tabla')     renderTable();
+    if (id === 'cargar')    renderChips();
+    if (id === 'historial') renderHistorial();
+    if (id === 'jugadores') renderRoster();
+  }
+}, () => {
+  showLoadingOverlay(false);
+});
+
+// ─── NAVIGATION ────────────────────────────────────────────────────────────
 function showView(v, btn) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -26,8 +65,9 @@ function showView(v, btn) {
   if (v === 'historial') renderHistorial();
   if (v === 'jugadores') renderRoster();
 }
+window.showView = showView;
 
-/* ─── STATS ─── */
+// ─── STATS ─────────────────────────────────────────────────────────────────
 function computeStats() {
   const stats = {};
   state.players.forEach(p => {
@@ -44,16 +84,16 @@ function computeStats() {
     teamA.forEach(p => {
       stats[p].pj++;
       stats[p].gf += ga; stats[p].gc += gb;
-      if (ga > gb) { stats[p].pg++; stats[p].pts += 3; }
-      else if (ga === gb) { stats[p].pe++; stats[p].pts += 1; }
-      else { stats[p].pp++; }
+      if (ga > gb)      { stats[p].pg++; stats[p].pts += 3; }
+      else if (ga===gb) { stats[p].pe++; stats[p].pts += 1; }
+      else              { stats[p].pp++; }
     });
     teamB.forEach(p => {
       stats[p].pj++;
       stats[p].gf += gb; stats[p].gc += ga;
-      if (gb > ga) { stats[p].pg++; stats[p].pts += 3; }
-      else if (ga === gb) { stats[p].pe++; stats[p].pts += 1; }
-      else { stats[p].pp++; }
+      if (gb > ga)      { stats[p].pg++; stats[p].pts += 3; }
+      else if (ga===gb) { stats[p].pe++; stats[p].pts += 1; }
+      else              { stats[p].pp++; }
     });
   });
   return stats;
@@ -71,20 +111,18 @@ function getSortedRows(stats) {
     });
 }
 
-/* ─── TABLE ─── */
+// ─── TABLE ─────────────────────────────────────────────────────────────────
 function renderTable() {
   const stats = computeStats();
   const rows = getSortedRows(stats);
   const tbody = document.getElementById('ranking-body');
   const empty = document.getElementById('tabla-empty');
-
   if (rows.length === 0) {
     tbody.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
-
   tbody.innerHTML = rows.map(([name, s], i) => {
     const eff = s.pj > 0 ? (s.pts / (s.pj * 3)) * 100 : 0;
     const dg = s.gf - s.gc;
@@ -104,42 +142,36 @@ function renderTable() {
   }).join('');
 }
 
-/* ─── DOWNLOAD IMAGE ─── */
-function downloadImage() {
+// ─── DOWNLOAD IMAGE ────────────────────────────────────────────────────────
+async function downloadImage() {
   const exportable = document.getElementById('tabla-exportable');
   const exportHeader = document.getElementById('export-header');
   const exportDateText = document.getElementById('export-date-text');
-
   const now = new Date();
   exportDateText.textContent = now.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
   exportHeader.style.display = 'flex';
-
-  html2canvas(exportable, {
-    backgroundColor: '#111111',
-    scale: 2,
-    useCORS: true,
-    logging: false
-  }).then(canvas => {
+  try {
+    const canvas = await html2canvas(exportable, { backgroundColor: '#111111', scale: 2, useCORS: true, logging: false });
     exportHeader.style.display = 'none';
     const link = document.createElement('a');
-    link.download = 'torneo-viernes-' + now.toISOString().slice(0, 10) + '.png';
+    link.download = 'pachanga-' + now.toISOString().slice(0, 10) + '.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
-  }).catch(() => {
+  } catch {
     exportHeader.style.display = 'none';
-    showMsg('error', 'No se pudo generar la imagen. Intentá de nuevo.');
-  });
+  }
 }
+window.downloadImage = downloadImage;
 
-/* ─── SHARE WHATSAPP ─── */
+// ─── SHARE WHATSAPP ────────────────────────────────────────────────────────
 function shareWhatsapp() {
   const now = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
   const text = `⚽ *Torneo Viernes* — Tabla actualizada al ${now}\nhttps://julisalome.github.io/pachanga/`;
-  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
-  window.open(url, '_blank');
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
+window.shareWhatsapp = shareWhatsapp;
 
-/* ─── FORM ─── */
+// ─── FORM ──────────────────────────────────────────────────────────────────
 function changeGoal(team, delta) {
   const input = document.getElementById('goals-' + team);
   const display = document.getElementById('goals-' + team + '-display');
@@ -148,15 +180,14 @@ function changeGoal(team, delta) {
   input.value = val;
   display.textContent = val;
 }
+window.changeGoal = changeGoal;
 
 function renderChips() {
-  selA = new Set();
-  selB = new Set();
+  selA = new Set(); selB = new Set();
   document.getElementById('goals-a').value = 0;
   document.getElementById('goals-b').value = 0;
   document.getElementById('goals-a-display').textContent = '0';
   document.getElementById('goals-b-display').textContent = '0';
-
   ['a', 'b'].forEach(t => {
     const container = document.getElementById('chips-' + t);
     if (state.players.length === 0) {
@@ -169,8 +200,8 @@ function renderChips() {
   });
 }
 
-function safeId(name) { return name.replace(/[^a-zA-Z0-9]/g, '_'); }
-function escapeName(name) { return name.replace(/'/g, "\\'"); }
+function safeId(name)    { return name.replace(/[^a-zA-Z0-9]/g, '_'); }
+function escapeName(name){ return name.replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 function togglePlayer(name, team) {
   const other = team === 'a' ? 'b' : 'a';
@@ -181,16 +212,18 @@ function togglePlayer(name, team) {
   if (thisSet.has(name)) { thisSet.delete(name); chip.className = 'player-chip'; }
   else { thisSet.add(name); chip.className = 'player-chip selected-' + team; }
 }
+window.togglePlayer = togglePlayer;
 
 function showMsg(type, txt) {
   const el = document.getElementById('form-msg');
   el.className = 'msg ' + (type === 'ok' ? 'ok' : 'err');
   el.textContent = txt;
+  el.style.display = 'block';
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.style.display = 'none'; }, 3500);
 }
 
-function submitMatch() {
+async function submitMatch() {
   const date = document.getElementById('match-date').value.trim();
   const ga = parseInt(document.getElementById('goals-a').value) || 0;
   const gb = parseInt(document.getElementById('goals-b').value) || 0;
@@ -198,13 +231,14 @@ function submitMatch() {
   if (selA.size === 0 || selB.size === 0) { showMsg('error', 'Seleccioná al menos un jugador por equipo.'); return; }
   const match = { date, teamA: [...selA], teamB: [...selB], goalsA: ga, goalsB: gb, id: Date.now() };
   state.matches.unshift(match);
-  save(state);
-  showMsg('ok', '¡Partido registrado correctamente!');
+  await saveToFirestore();
+  showMsg('ok', '¡Partido registrado!');
   document.getElementById('match-date').value = '';
   renderChips();
 }
+window.submitMatch = submitMatch;
 
-/* ─── HISTORIAL ─── */
+// ─── HISTORIAL ─────────────────────────────────────────────────────────────
 function renderHistorial() {
   const el = document.getElementById('historial-list');
   if (state.matches.length === 0) {
@@ -229,14 +263,14 @@ function renderHistorial() {
   }).join('');
 }
 
-function deleteMatch(id) {
+async function deleteMatch(id) {
   if (!confirm('¿Borrar este partido?')) return;
   state.matches = state.matches.filter(m => m.id !== id);
-  save(state);
-  renderHistorial();
+  await saveToFirestore();
 }
+window.deleteMatch = deleteMatch;
 
-/* ─── JUGADORES ─── */
+// ─── JUGADORES ─────────────────────────────────────────────────────────────
 function renderRoster() {
   const el = document.getElementById('roster-list-wrap');
   if (state.players.length === 0) {
@@ -248,7 +282,7 @@ function renderRoster() {
   ).join('');
 }
 
-function addPlayer() {
+async function addPlayer() {
   const inp = document.getElementById('new-player-name');
   const name = inp.value.trim();
   if (!name) return;
@@ -256,25 +290,24 @@ function addPlayer() {
     alert('Ese jugador ya existe.'); return;
   }
   state.players.push(name);
-  save(state);
+  await saveToFirestore();
   inp.value = '';
-  renderRoster();
 }
+window.addPlayer = addPlayer;
 
-function removePlayer(name) {
+async function removePlayer(name) {
   if (!confirm(`¿Eliminar a ${name} del plantel?`)) return;
   state.players = state.players.filter(p => p !== name);
-  save(state);
-  renderRoster();
+  await saveToFirestore();
 }
+window.removePlayer = removePlayer;
 
-function resetAll() {
+async function resetAll() {
   if (!confirm('¿Seguro? Esto borra TODOS los partidos y jugadores. No se puede deshacer.')) return;
   state = { players: [], matches: [] };
-  save(state);
-  renderTable();
-  renderRoster();
+  await saveToFirestore();
 }
+window.resetAll = resetAll;
 
-/* ─── INIT ─── */
-renderTable();
+// ─── INIT ──────────────────────────────────────────────────────────────────
+showLoadingOverlay(true);
