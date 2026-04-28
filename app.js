@@ -285,15 +285,49 @@ async function downloadImage() {
   const now = new Date();
   exportDateText.textContent = now.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
   exportHeader.style.display = 'flex';
+
+  // Temporarily override table styles for full capture
+  const tableWrap = exportable.querySelector('.table-wrap') || exportable;
+  const origOverflow = tableWrap.style.overflow;
+  const origMaxH = tableWrap.style.maxHeight;
+  tableWrap.style.overflow = 'visible';
+  tableWrap.style.maxHeight = 'none';
+
+  // Also make sure the exportable container shows full height
+  const origExpOverflow = exportable.style.overflow;
+  exportable.style.overflow = 'visible';
+
   try {
-    const canvas = await html2canvas(exportable, { backgroundColor: '#111111', scale: 2, useCORS: true, logging: false });
+    // Get full scroll height
+    const fullHeight = exportable.scrollHeight;
+    const fullWidth = exportable.scrollWidth;
+
+    const canvas = await html2canvas(exportable, {
+      backgroundColor: '#111111',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      width: fullWidth,
+      height: fullHeight,
+      windowWidth: fullWidth,
+      windowHeight: fullHeight,
+      scrollX: 0,
+      scrollY: 0,
+    });
     exportHeader.style.display = 'none';
+    tableWrap.style.overflow = origOverflow;
+    tableWrap.style.maxHeight = origMaxH;
+    exportable.style.overflow = origExpOverflow;
+
     const link = document.createElement('a');
     link.download = 'pachanga-' + now.toISOString().slice(0, 10) + '.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
-  } catch {
+  } catch(e) {
     exportHeader.style.display = 'none';
+    tableWrap.style.overflow = origOverflow;
+    tableWrap.style.maxHeight = origMaxH;
+    exportable.style.overflow = origExpOverflow;
   }
 }
 window.downloadImage = downloadImage;
@@ -629,6 +663,51 @@ function renderProfile(name) {
           <div class="profile-match-score">${m.gf} – ${m.gc}</div>
         </div>`;
       }).join('');
+
+  // Full history: summary rows per past tournament + current match list
+  const fullHistHTML = (() => {
+    let html = '';
+
+    // Past tournaments summary rows
+    HISTORICAL_TOURNAMENTS.forEach(t => {
+      const s = t.standings[name];
+      if (!s) return;
+      const isChamp = t.champions.includes(name);
+      html += `<div class="hist-tournament-row">
+        <div class="hist-tournament-left">
+          <span class="hist-tournament-badge">${isChamp ? '🏆' : '📋'}</span>
+          <span class="hist-tournament-name">${t.name}</span>
+        </div>
+        <div class="hist-tournament-right">
+          <span class="hist-result-pill hist-pill-w">${s.pg}G</span>
+          <span class="hist-result-pill hist-pill-e">${s.pe}E</span>
+          <span class="hist-result-pill hist-pill-l">${s.pp}D</span>
+          <span class="hist-pj">${s.pj} PJ</span>
+        </div>
+      </div>`;
+    });
+
+    // Current tournament match list
+    if (matches.length > 0) {
+      html += `<div class="hist-tournament-row" style="cursor:default">
+        <div class="hist-tournament-left">
+          <span class="hist-tournament-badge">⚽</span>
+          <span class="hist-tournament-name">Torneo en curso</span>
+        </div>
+        <div class="hist-tournament-right">
+          <span class="hist-result-pill hist-pill-w">${pg}G</span>
+          <span class="hist-result-pill hist-pill-e">${pe}E</span>
+          <span class="hist-result-pill hist-pill-l">${pp}D</span>
+          <span class="hist-pj">${pj} PJ</span>
+        </div>
+      </div>`;
+      html += `<div class="profile-matches" style="margin-top:8px">${histHTML}</div>`;
+    } else {
+      html += `<p class="profile-no-matches">Sin partidos en el torneo actual todavía.</p>`;
+    }
+
+    return html;
+  })();
 
   // All-time combined stats
   const histStats = (() => {
