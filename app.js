@@ -628,18 +628,15 @@ function renderProfile(name) {
   const dgClass = dg > 0 ? 'dg-pos' : dg < 0 ? 'dg-neg' : 'dg-zero';
   const dgStr = dg > 0 ? '+' + dg : String(dg);
 
-  // Racha — últimos 10 partidos
+  // Racha
   const last10 = matches.slice(0, 10);
   const rachaHTML = last10.map(m => {
     const cls = m.result === 'W' ? 'badge-w' : m.result === 'E' ? 'badge-e' : 'badge-l';
     return `<span class="racha-badge ${cls}">${m.result}</span>`;
   }).join('');
-
-  // Racha actual consecutiva
-  let rachaActual = 0;
-  let rachaType = '';
+  let rachaActual = 0, rachaType = '';
   for (const m of matches) {
-    if (rachaActual === 0) { rachaType = m.result; rachaActual = 1; }
+    if (!rachaType) { rachaType = m.result; rachaActual = 1; }
     else if (m.result === rachaType) rachaActual++;
     else break;
   }
@@ -647,12 +644,11 @@ function renderProfile(name) {
     ? `${rachaActual} ${rachaType === 'W' ? 'victorias' : rachaType === 'E' ? 'empates' : 'derrotas'} seguidas`
     : '';
 
-  // Historial
+  // Match history HTML
   const histHTML = matches.length === 0
     ? '<p class="profile-no-matches">Sin partidos registrados.</p>'
     : matches.map(m => {
         const resCls = m.result === 'W' ? 'badge-w' : m.result === 'E' ? 'badge-e' : 'badge-l';
-        const resLabel = m.result === 'W' ? 'Victoria' : m.result === 'E' ? 'Empate' : 'Derrota';
         return `<div class="profile-match-item">
           <div class="profile-match-left">
             <span class="racha-badge ${resCls}" style="font-size:11px;padding:3px 8px">${m.result}</span>
@@ -666,98 +662,81 @@ function renderProfile(name) {
         </div>`;
       }).join('');
 
-  // Full history: summary rows per past tournament + current match list
-  const fullHistHTML = (() => {
-    let html = '';
-
-    // Past tournaments summary rows
-    HISTORICAL_TOURNAMENTS.forEach(t => {
-      const s = t.standings[name];
-      if (!s) return;
-      const isChamp = t.champions.includes(name);
-      html += `<div class="hist-tournament-row">
-        <div class="hist-tournament-left">
-          <span class="hist-tournament-badge">${isChamp ? '🏆' : '📋'}</span>
-          <span class="hist-tournament-name">${t.name}</span>
+  // Evolution chart
+  const evoHTML = (() => {
+    if (matches.length < 2) return '';
+    const sorted = [...matches].reverse();
+    let cum = 0;
+    const points = sorted.map(m => { if (m.result==='W') cum+=3; else if(m.result==='E') cum+=1; return cum; });
+    const maxPts = Math.max(...points, 1);
+    const W = 280, H = 70, PAD = 8;
+    const xStep = (W - PAD*2) / (points.length - 1 || 1);
+    const toY = v => H - PAD - ((v / maxPts) * (H - PAD*2));
+    const toX = i => PAD + i * xStep;
+    const polyline = points.map((v,i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+    const areaPath = `M${toX(0).toFixed(1)},${H} ` + points.map((v,i) => `L${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ') + ` L${toX(points.length-1).toFixed(1)},${H} Z`;
+    const dots = points.map((v,i) => {
+      const col = sorted[i].result==='W'?'#5cb85c':sorted[i].result==='E'?'#c8b85c':'#e05252';
+      return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="4" fill="${col}" stroke="#111" stroke-width="1.5"/>`;
+    }).join('');
+    return `<div class="profile-section">
+      <div class="profile-section-title">Evolución de puntos</div>
+      <div class="evo-chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">
+          <defs><linearGradient id="evoGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5cb85c" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#5cb85c" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path d="${areaPath}" fill="url(#evoGrad)"/>
+          <polyline points="${polyline}" fill="none" stroke="#5cb85c" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          ${dots}
+        </svg>
+        <div class="evo-labels">
+          <span>${sorted[0]?.date||''}</span>
+          <span style="color:var(--green-accent);font-weight:600">${points[points.length-1]} pts</span>
+          <span>${sorted[sorted.length-1]?.date||''}</span>
         </div>
-        <div class="hist-tournament-right">
-          <span class="hist-result-pill hist-pill-w">${s.pg}G</span>
-          <span class="hist-result-pill hist-pill-e">${s.pe}E</span>
-          <span class="hist-result-pill hist-pill-l">${s.pp}D</span>
-          <span class="hist-pj">${s.pj} PJ</span>
-        </div>
-      </div>`;
-    });
-
-    // Current tournament match list
-    if (matches.length > 0) {
-      html += `<div class="hist-tournament-row" style="cursor:default">
-        <div class="hist-tournament-left">
-          <span class="hist-tournament-badge">⚽</span>
-          <span class="hist-tournament-name">Torneo en curso</span>
-        </div>
-        <div class="hist-tournament-right">
-          <span class="hist-result-pill hist-pill-w">${pg}G</span>
-          <span class="hist-result-pill hist-pill-e">${pe}E</span>
-          <span class="hist-result-pill hist-pill-l">${pp}D</span>
-          <span class="hist-pj">${pj} PJ</span>
-        </div>
-      </div>`;
-      html += `<div class="profile-matches" style="margin-top:8px">${histHTML}</div>`;
-    } else {
-      html += `<p class="profile-no-matches">Sin partidos en el torneo actual todavía.</p>`;
-    }
-
-    return html;
+      </div>
+    </div>`;
   })();
 
-  // All-time combined stats
-  const histStats = (() => {
-    let tpts = 0, tpj = 0, tpg = 0, tpe = 0, tpp = 0, tgf = 0, tgc = 0;
-    // Current tournament
-    tpts += pts; tpj += pj; tpg += pg; tpe += pe; tpp += pp; tgf += gf; tgc += gc;
-    // Historical tournaments
-    HISTORICAL_TOURNAMENTS.forEach(t => {
-      const s = t.standings[name];
-      if (s) { tpts += s.pts; tpj += s.pj; tpg += s.pg; tpe += s.pe; tpp += s.pp; }
-    });
-    const tdg = tgf - tgc;
-    const teff = tpj > 0 ? ((tpts / (tpj * 3)) * 100).toFixed(1) : '0.0';
-    const teffClass = parseFloat(teff) >= 66 ? 'eff-high' : parseFloat(teff) >= 40 ? 'eff-mid' : 'eff-low';
-    const tdgClass = tdg > 0 ? 'dg-pos' : tdg < 0 ? 'dg-neg' : 'dg-zero';
-    return { tpts, tpj, tpg, tpe, tpp, tgf, tgc, tdg, teff, teffClass, tdgClass };
-  })();
+  // Badges
+  const allStats = computeStats();
+  const playerBadges = computeBadges(name, matches, allStats);
+  const badgesHTML = playerBadges.length === 0 ? '' : `
+    <div class="profile-section">
+      <div class="profile-section-title">Logros</div>
+      <div class="badges-grid">
+        ${playerBadges.map(b => `<div class="badge-chip"><span class="badge-icon">${b.icon}</span><span class="badge-label">${b.label}</span></div>`).join('')}
+      </div>
+    </div>`;
 
-  const allTimeStatsHTML = (histStats.tpj > pj) ? `
-    <div class="profile-section-header" style="background:#1a1600;color:#a08030;border-color:#3a3000">Estadísticas globales</div>
-    <div class="profile-stats-grid" style="background:#2a2400">
-      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val profile-pts">\${histStats.tpts}</span><span class="profile-stat-key">Pts</span></div>
-      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val">\${histStats.tpj}</span><span class="profile-stat-key">PJ</span></div>
-      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val" style="color:#5cb85c">\${histStats.tpg}</span><span class="profile-stat-key">PG</span></div>
-      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val" style="color:#c8b85c">\${histStats.tpe}</span><span class="profile-stat-key">PE</span></div>
-      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val" style="color:#e05252">\${histStats.tpp}</span><span class="profile-stat-key">PP</span></div>
-      <div class="profile-stat" style="background:#1a1600"><span class="profile-stat-val \${histStats.tdgClass}">\${histStats.tdg > 0 ? '+' + histStats.tdg : histStats.tdg}</span><span class="profile-stat-key">DG</span></div>
-      <div class="profile-stat" style="background:#1a1600"><span class="eff-cell \${histStats.teffClass}" style="font-size:14px">\${histStats.teff}%</span><span class="profile-stat-key">Ef.%</span></div>
-    </div>` : '';
+  // Companions & rivals
+  const companions = {}, rivals = {};
+  matches.forEach(m => {
+    m.teammates.forEach(t => { if(!companions[t]) companions[t]={w:0,total:0}; companions[t].total++; if(m.result==='W') companions[t].w++; });
+    m.rivals.forEach(r => { if(!rivals[r]) rivals[r]={w:0,l:0,total:0}; rivals[r].total++; if(m.result==='W') rivals[r].w++; else if(m.result==='L') rivals[r].l++; });
+  });
+  const compSorted = Object.entries(companions).filter(([,v])=>v.total>=1).sort((a,b)=>(b[1].w/b[1].total)-(a[1].w/a[1].total)).slice(0,5);
+  const rivalsSorted = Object.entries(rivals).filter(([,v])=>v.total>=1).sort((a,b)=>b[1].total-a[1].total).slice(0,5);
+  const compHTML = compSorted.length===0?'':`<div class="profile-section"><div class="profile-section-title">Mejores compañeros</div>${compSorted.map(([p,v])=>{const pct=Math.round((v.w/v.total)*100);const bc=pct>=66?'bar-green':pct>=40?'bar-yellow':'bar-red';return `<div class="rival-row"><span class="rival-name">${p}</span><div class="rival-bar-wrap"><div class="rival-bar ${bc}" style="width:${pct}%"></div></div><span class="rival-pct">${pct}%</span><span class="rival-sub">${v.w}G/${v.total}P</span></div>`;}).join('')}</div>`;
+  const rivalsHTML = rivalsSorted.length===0?'':`<div class="profile-section"><div class="profile-section-title">Rivales frecuentes</div>${rivalsSorted.map(([p,v])=>{const pct=Math.round((v.w/v.total)*100);const bc=pct>=66?'bar-green':pct>=40?'bar-yellow':'bar-red';return `<div class="rival-row"><span class="rival-name">${p}</span><div class="rival-bar-wrap"><div class="rival-bar ${bc}" style="width:${pct}%"></div></div><span class="rival-pct">${pct}%</span><span class="rival-sub">${v.w}G ${v.l}D/${v.total}P</span></div>`;}).join('')}</div>`;
 
-  // Titles & historical tournaments
+  // Titles
   const playerTitles = HISTORICAL_TITLES[name] || 0;
-  const playerTournaments = HISTORICAL_TOURNAMENTS.filter(t => t.standings[name]);
-
   const titlesHTML = playerTitles > 0
-    ? `<div class="profile-titles-row">${Array(playerTitles).fill('🏆').join('')} <span class="profile-titles-label">${playerTitles} título${playerTitles > 1 ? 's' : ''}</span></div>`
+    ? `<div class="profile-titles-row">${Array(playerTitles).fill('🏆').join('')} <span class="profile-titles-label">${playerTitles} título${playerTitles>1?'s':''}</span></div>`
     : '';
 
-  // Historical tournament stats blocks
+  // Historical tournaments detail
+  const playerTournaments = HISTORICAL_TOURNAMENTS.filter(t => t.standings[name]);
   const histTournamentHTML = playerTournaments.map(t => {
     const s = t.standings[name];
     const isChamp = t.champions.includes(name);
-    const teff = s.pj > 0 ? ((s.pts / (s.pj * 3)) * 100).toFixed(1) : '0.0';
-    const teffClass = parseFloat(teff) >= 66 ? 'eff-high' : parseFloat(teff) >= 40 ? 'eff-mid' : 'eff-low';
+    const teff = s.pj>0?((s.pts/(s.pj*3))*100).toFixed(1):'0.0';
+    const teffClass = parseFloat(teff)>=66?'eff-high':parseFloat(teff)>=40?'eff-mid':'eff-low';
     return `<div class="profile-hist-tournament">
-      <div class="profile-hist-tournament-name">
-        ${isChamp ? '🏆 ' : ''}${t.name}
-      </div>
+      <div class="profile-hist-tournament-name">${isChamp?'🏆 ':''}${t.name}</div>
       <div class="profile-hist-stats">
         <div class="profile-hist-stat"><span class="profile-hist-val" style="color:var(--gold)">${s.pts}</span><span class="profile-stat-key">Pts</span></div>
         <div class="profile-hist-stat"><span class="profile-hist-val">${s.pj}</span><span class="profile-stat-key">PJ</span></div>
@@ -769,135 +748,12 @@ function renderProfile(name) {
     </div>`;
   }).join('');
 
-
-  // ── Gráfico de evolución de puntos ──
-  const evoHTML = (() => {
-    if (matches.length < 2) return '';
-    // Build cumulative points timeline (oldest first)
-    const sorted = [...matches].reverse();
-    let cum = 0;
-    const points = sorted.map(m => {
-      if (m.result === 'W') cum += 3;
-      else if (m.result === 'E') cum += 1;
-      return cum;
-    });
-    const maxPts = Math.max(...points, 1);
-    const W = 280, H = 70, PAD = 8;
-    const xStep = (W - PAD*2) / (points.length - 1 || 1);
-    const toY = v => H - PAD - ((v / maxPts) * (H - PAD*2));
-    const toX = i => PAD + i * xStep;
-
-    const polyline = points.map((v,i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
-    const areaPath = `M${toX(0).toFixed(1)},${H} ` +
-      points.map((v,i) => `L${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ') +
-      ` L${toX(points.length-1).toFixed(1)},${H} Z`;
-
-    const dots = points.map((v,i) => {
-      const m = sorted[i];
-      const col = m.result==='W'?'#5cb85c':m.result==='E'?'#c8b85c':'#e05252';
-      return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="4" fill="${col}" stroke="#111" stroke-width="1.5"/>`;
-    }).join('');
-
-    return `<div class="profile-section" style="margin-top:8px">
-      <div class="profile-section-title">Evolución de puntos</div>
-      <div class="evo-chart-wrap">
-        <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="evoGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#5cb85c" stop-opacity="0.25"/>
-              <stop offset="100%" stop-color="#5cb85c" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-          <path d="${areaPath}" fill="url(#evoGrad)"/>
-          <polyline points="${polyline}" fill="none" stroke="#5cb85c" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-          ${dots}
-        </svg>
-        <div class="evo-labels">
-          <span>${sorted[0]?.date || ''}</span>
-          <span style="color:var(--green-accent);font-weight:600">${points[points.length-1]} pts</span>
-          <span>${sorted[sorted.length-1]?.date || ''}</span>
-        </div>
-      </div>
-    </div>`;
-  })();
-
-  // ── Compañeros y rivales ──
-  const companions = {};
-  const rivals = {};
-  matches.forEach(m => {
-    m.teammates.forEach(t => {
-      if (!companions[t]) companions[t] = { w: 0, total: 0 };
-      companions[t].total++;
-      if (m.result === 'W') companions[t].w++;
-    });
-    m.rivals.forEach(r => {
-      if (!rivals[r]) rivals[r] = { w: 0, l: 0, total: 0 };
-      rivals[r].total++;
-      if (m.result === 'W') rivals[r].w++;
-      else if (m.result === 'L') rivals[r].l++;
-    });
-  });
-
-  const compSorted = Object.entries(companions)
-    .filter(([,v]) => v.total >= 1)
-    .sort((a,b) => (b[1].w/b[1].total) - (a[1].w/a[1].total))
-    .slice(0, 5);
-
-  const rivalsSorted = Object.entries(rivals)
-    .filter(([,v]) => v.total >= 1)
-    .sort((a,b) => b[1].total - a[1].total)
-    .slice(0, 5);
-
-  const compHTML = compSorted.length === 0 ? '' : `
-    <div class="profile-section" style="margin-top:8px">
-      <div class="profile-section-title">Mejores compañeros</div>
-      ${compSorted.map(([p, v]) => {
-        const pct = Math.round((v.w / v.total) * 100);
-        const barClass = pct >= 66 ? 'bar-green' : pct >= 40 ? 'bar-yellow' : 'bar-red';
-        return `<div class="rival-row">
-          <span class="rival-name">${p}</span>
-          <div class="rival-bar-wrap">
-            <div class="rival-bar ${barClass}" style="width:${pct}%"></div>
-          </div>
-          <span class="rival-pct">${pct}%</span>
-          <span class="rival-sub">${v.w}G/${v.total}P</span>
-        </div>`;
-      }).join('')}
-    </div>` ;
-
-  const rivalsHTML = rivalsSorted.length === 0 ? '' : `
-    <div class="profile-section" style="margin-top:8px">
-      <div class="profile-section-title">Rivales frecuentes</div>
-      ${rivalsSorted.map(([p, v]) => {
-        const pct = Math.round((v.w / v.total) * 100);
-        const barClass = pct >= 66 ? 'bar-green' : pct >= 40 ? 'bar-yellow' : 'bar-red';
-        return `<div class="rival-row">
-          <span class="rival-name">${p}</span>
-          <div class="rival-bar-wrap">
-            <div class="rival-bar ${barClass}" style="width:${pct}%"></div>
-          </div>
-          <span class="rival-pct">${pct}%</span>
-          <span class="rival-sub">${v.w}G ${v.l}D/${v.total}P</span>
-        </div>`;
-      }).join('')}
-    </div>`;
-
-  // ── All-time totals ──
-  const histTotals = (() => {
-    let tpj = pj, tpg = pg, tpe = pe, tpp = pp, tpts = pts, tgf = gf, tgc = gc;
-    HISTORICAL_TOURNAMENTS.forEach(t => {
-      const s = t.standings[name];
-      if (s) { tpj += s.pj; tpg += s.pg; tpe += s.pe; tpp += s.pp; tpts += s.pts; }
-    });
-    const tdg = tgf - tgc;
-    const teff = tpj > 0 ? ((tpts / (tpj * 3)) * 100).toFixed(1) : '0.0';
-    const teffClass = parseFloat(teff) >= 66 ? 'eff-high' : parseFloat(teff) >= 40 ? 'eff-mid' : 'eff-low';
-    const tdgClass = tdg > 0 ? 'dg-pos' : tdg < 0 ? 'dg-neg' : 'dg-zero';
-    const tdgStr = tdg > 0 ? '+' + tdg : String(tdg);
-    return { tpj, tpg, tpe, tpp, tpts, tgf, tgc, tdg, tdgStr, teff, teffClass, tdgClass };
-  })();
-
-  const hasHistory = HISTORICAL_TOURNAMENTS.some(t => t.standings[name]);
+  // All-time totals
+  const hasHistory = playerTournaments.length > 0;
+  let tpj=pj, tpg=pg, tpe=pe, tpp=pp, tpts=pts;
+  playerTournaments.forEach(t => { const s=t.standings[name]; if(s){tpj+=s.pj;tpg+=s.pg;tpe+=s.pe;tpp+=s.pp;tpts+=s.pts;} });
+  const teff = tpj>0?((tpts/(tpj*3))*100).toFixed(1):'0.0';
+  const teffClass = parseFloat(teff)>=66?'eff-high':parseFloat(teff)>=40?'eff-mid':'eff-low';
 
   document.getElementById('profile-panel').innerHTML = `
     <div class="profile-inner">
@@ -916,13 +772,12 @@ function renderProfile(name) {
       ${hasHistory ? `
       <div class="profile-section-header" style="background:#1a1600;color:#c8a830;border-color:#3a3000">Historial total</div>
       <div class="profile-stats-grid" style="background:#2a2400">
-        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:var(--gold)">${histTotals.tpts}</span><span class="profile-stat-key">Pts</span></div>
-        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val">${histTotals.tpj}</span><span class="profile-stat-key">PJ</span></div>
-        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#5cb85c">${histTotals.tpg}</span><span class="profile-stat-key">PG</span></div>
-        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#c8b85c">${histTotals.tpe}</span><span class="profile-stat-key">PE</span></div>
-        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#e05252">${histTotals.tpp}</span><span class="profile-stat-key">PP</span></div>
-        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val ${histTotals.tdgClass}">${histTotals.tdgStr}</span><span class="profile-stat-key">DG</span></div>
-        <div class="profile-stat" style="background:#1c1600"><span class="eff-cell ${histTotals.teffClass}" style="font-size:13px">${histTotals.teff}%</span><span class="profile-stat-key">Ef.%</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:var(--gold)">${tpts}</span><span class="profile-stat-key">Pts</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val">${tpj}</span><span class="profile-stat-key">PJ</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#5cb85c">${tpg}</span><span class="profile-stat-key">PG</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#c8b85c">${tpe}</span><span class="profile-stat-key">PE</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="profile-stat-val" style="color:#e05252">${tpp}</span><span class="profile-stat-key">PP</span></div>
+        <div class="profile-stat" style="background:#1c1600"><span class="eff-cell ${teffClass}" style="font-size:13px">${teff}%</span><span class="profile-stat-key">Ef.%</span></div>
       </div>` : ''}
 
       <div class="profile-section-header">Torneo en curso</div>
@@ -936,14 +791,9 @@ function renderProfile(name) {
         <div class="profile-stat"><span class="eff-cell ${effClass}" style="font-size:14px">${eff}%</span><span class="profile-stat-key">Ef.%</span></div>
       </div>
 
-      ${last10.length > 0 ? `
-      <div class="profile-section">
-        <div class="profile-section-title">Racha reciente</div>
-        <div class="profile-racha-strip">${rachaHTML}</div>
-      </div>` : ''}
+      ${last10.length > 0 ? `<div class="profile-section"><div class="profile-section-title">Racha reciente</div><div class="profile-racha-strip">${rachaHTML}</div></div>` : ''}
 
       ${evoHTML}
-
       ${badgesHTML}
 
       <div class="profile-section">
@@ -951,11 +801,7 @@ function renderProfile(name) {
         <div class="profile-matches">${histHTML}</div>
       </div>
 
-      ${hasHistory ? `
-      <div class="profile-section" style="margin-top:8px">
-        <div class="profile-section-title">Torneos anteriores</div>
-        ${histTournamentHTML}
-      </div>` : ''}
+      ${hasHistory ? `<div class="profile-section"><div class="profile-section-title">Torneos anteriores</div>${histTournamentHTML}</div>` : ''}
 
       ${compHTML}
       ${rivalsHTML}
