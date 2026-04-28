@@ -42,10 +42,11 @@ onSnapshot(DOC_REF, (snapshot) => {
   } else {
     state = { players: [], matches: [] };
   }
+  renderPalmares();
   const activeView = document.querySelector('.view.active');
   if (activeView) {
     const id = activeView.id.replace('view-', '');
-    if (id === 'tabla')     { renderTable(); renderPalmares(); }
+    if (id === 'tabla')     renderTable();
     if (id === 'cargar')    renderChips();
     if (id === 'historial') renderHistorial();
     if (id === 'jugadores') renderRoster();
@@ -311,7 +312,6 @@ window.resetAll = resetAll;
 
 // ─── INIT ──────────────────────────────────────────────────────────────────
 showLoadingOverlay(true);
-renderPalmares();
 
 // ─── PALMARÉS ──────────────────────────────────────────────────────────────
 const HISTORICAL_TITLES = {
