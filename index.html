@@ -22,6 +22,7 @@
       <button class="nav-btn active" data-view="tabla" onclick="showView('tabla',this)">Tabla</button>
       <button class="nav-btn" data-view="cargar" onclick="showView('cargar',this)">Cargar partido</button>
       <button class="nav-btn" data-view="historial" onclick="showView('historial',this)">Historial</button>
+      <button class="nav-btn" data-view="historia" onclick="showView('historia',this)">Historia</button>
       <button class="nav-btn" data-view="jugadores" onclick="showView('jugadores',this)">Jugadores</button>
     </div>
 
@@ -59,6 +60,15 @@
           <p>Todavía no hay partidos cargados.</p>
           <p class="empty-sub">Andá a "Cargar partido" para empezar.</p>
         </div>
+      </div>
+
+      <!-- PALMARÉS -->
+      <div class="palmares-section">
+        <div class="palmares-title-row">
+          <span class="palmares-icon">🏆</span>
+          <span class="palmares-heading">Palmarés</span>
+        </div>
+        <div id="palmares-list"></div>
       </div>
     </div>
 
@@ -118,6 +128,60 @@
     <div id="view-historial" class="view">
       <p class="section-title">Partidos registrados</p>
       <div id="historial-list"></div>
+    </div>
+
+    <!-- HISTORIA -->
+    <div id="view-historia" class="view">
+      <div class="historia-torneo">
+        <div class="historia-torneo-header">
+          <div>
+            <div class="historia-torneo-name">Torneo Inicial 2025</div>
+            <div class="historia-torneo-sub">Tabla final de posiciones</div>
+          </div>
+          <div class="historia-campeones-badge">
+            🏆 Campeones
+          </div>
+        </div>
+
+        <div class="historia-campeones-chips">
+          <span class="campeon-chip">Franco DM</span>
+          <span class="campeon-chip">Toti</span>
+          <span class="campeon-chip">Juli M</span>
+          <span class="campeon-chip">Roman</span>
+          <span class="campeon-chip">Lucas</span>
+          <span class="campeon-chip">Ian</span>
+        </div>
+
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead>
+              <tr>
+                <th class="th-left">#</th>
+                <th class="th-left">Jugador</th>
+                <th>Pts</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>Ef.%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="rank-1"><td class="rank-num">1</td><td class="td-left player-name">Fdm</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
+              <tr class="rank-2"><td class="rank-num">2</td><td class="td-left player-name">Ian</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
+              <tr class="rank-3"><td class="rank-num">3</td><td class="td-left player-name">Juli</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
+              <tr><td class="rank-num">4</td><td class="td-left player-name">Roma</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
+              <tr><td class="rank-num">5</td><td class="td-left player-name">Toti</td><td class="pts-cell">18</td><td>10</td><td>6</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">60.0%</span></td></tr>
+              <tr><td class="rank-num">6</td><td class="td-left player-name">Lucas</td><td class="pts-cell">18</td><td>8</td><td>6</td><td>0</td><td>2</td><td><span class="eff-cell eff-high">75.0%</span></td></tr>
+              <tr><td class="rank-num">7</td><td class="td-left player-name">Renga</td><td class="pts-cell">15</td><td>6</td><td>5</td><td>0</td><td>1</td><td><span class="eff-cell eff-high">83.3%</span></td></tr>
+              <tr><td class="rank-num">8</td><td class="td-left player-name">Pocho</td><td class="pts-cell">15</td><td>9</td><td>5</td><td>0</td><td>4</td><td><span class="eff-cell eff-mid">55.6%</span></td></tr>
+              <tr><td class="rank-num">9</td><td class="td-left player-name">Tincho</td><td class="pts-cell">15</td><td>10</td><td>5</td><td>0</td><td>5</td><td><span class="eff-cell eff-mid">50.0%</span></td></tr>
+              <tr><td class="rank-num">10</td><td class="td-left player-name">Gonzi</td><td class="pts-cell">12</td><td>10</td><td>4</td><td>0</td><td>6</td><td><span class="eff-cell eff-mid">40.0%</span></td></tr>
+              <tr><td class="rank-num">11</td><td class="td-left player-name">Felo</td><td class="pts-cell">9</td><td>6</td><td>3</td><td>0</td><td>3</td><td><span class="eff-cell eff-mid">50.0%</span></td></tr>
+              <tr><td class="rank-num">12</td><td class="td-left player-name">Lolo</td><td class="pts-cell">6</td><td>6</td><td>2</td><td>0</td><td>4</td><td><span class="eff-cell eff-low">33.3%</span></td></tr>
+              <tr><td class="rank-num">13</td><td class="td-left player-name">Licho</td><td class="pts-cell">6</td><td>8</td><td>2</td><td>0</td><td>6</td><td><span class="eff-cell eff-low">25.0%</span></td></tr>
+              <tr><td class="rank-num">14</td><td class="td-left player-name">Manu</td><td class="pts-cell">6</td><td>8</td><td>2</td><td>0</td><td>6</td><td><span class="eff-cell eff-low">25.0%</span></td></tr>
+              <tr><td class="rank-num">15</td><td class="td-left player-name">Mati</td><td class="pts-cell">3</td><td>2</td><td>1</td><td>0</td><td>1</td><td><span class="eff-cell eff-mid">50.0%</span></td></tr>
+              <tr><td class="rank-num">16</td><td class="td-left player-name">Jano</td><td class="pts-cell">0</td><td>2</td><td>0</td><td>0</td><td>2</td><td><span class="eff-cell eff-low">0.0%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- JUGADORES -->

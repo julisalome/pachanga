@@ -140,6 +140,7 @@ function renderTable() {
       <td><span class="eff-cell ${effClass}">${eff.toFixed(1)}%</span></td>
     </tr>`;
   }).join('');
+  renderPalmares();
 }
 
 // ─── DOWNLOAD IMAGE ────────────────────────────────────────────────────────
@@ -311,3 +312,41 @@ window.resetAll = resetAll;
 
 // ─── INIT ──────────────────────────────────────────────────────────────────
 showLoadingOverlay(true);
+
+// ─── PALMARÉS ──────────────────────────────────────────────────────────────
+// Datos históricos fijos — se suman a los títulos del torneo en curso cuando termine
+const HISTORICAL_TITLES = {
+  'Franco DM': 1,
+  'Ian':       1,
+  'Juli M':    1,
+  'Lucas':     1,
+  'Roman':     1,
+  'Toti':      1,
+};
+
+function renderPalmares() {
+  const el = document.getElementById('palmares-list');
+  if (!el) return;
+
+  // Contar títulos: por ahora solo históricos (cuando cierre el torneo actual se sumarán)
+  const titles = { ...HISTORICAL_TITLES };
+
+  const sorted = Object.entries(titles)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'));
+
+  if (sorted.length === 0) {
+    el.innerHTML = '<p style="font-size:13px;color:#555;padding:8px 0">Sin títulos registrados todavía.</p>';
+    return;
+  }
+
+  el.innerHTML = sorted.map(([name, count]) => `
+    <div class="palmares-row">
+      <span class="palmares-player">${name}</span>
+      <div class="palmares-titles">
+        <span class="palmares-trophy">🏆</span>
+        <span class="palmares-count">${count}</span>
+        <span class="palmares-label">${count === 1 ? 'título' : 'títulos'}</span>
+      </div>
+    </div>
+  `).join('');
+}

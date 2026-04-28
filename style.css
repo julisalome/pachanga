@@ -376,3 +376,102 @@ input:focus, select:focus { outline: none; border-color: var(--green-accent); }
   table { font-size: 12px; }
   .pts-cell { font-size: 17px; }
 }
+
+/* ─── PALMARÉS ─────────────────────────────────────────────────────────── */
+.palmares-section {
+  margin-top: 28px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.palmares-title-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.palmares-icon { font-size: 20px; }
+.palmares-heading {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--gold);
+}
+.palmares-row {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  gap: 10px;
+}
+.palmares-row:first-child {
+  background: #2a2200;
+  border-color: #5a4800;
+}
+.palmares-player {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  flex: 1;
+}
+.palmares-row:first-child .palmares-player { color: var(--gold); }
+.palmares-titles {
+  display: flex; align-items: center; gap: 6px;
+}
+.palmares-trophy {
+  font-size: 16px;
+}
+.palmares-count {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px; font-weight: 700;
+  color: var(--gold);
+  min-width: 20px; text-align: right;
+}
+.palmares-label {
+  font-size: 11px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .4px;
+}
+
+/* ─── HISTORIA ─────────────────────────────────────────────────────────── */
+.historia-torneo {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.historia-torneo-header {
+  background: linear-gradient(135deg, #2a2200, #1a1500);
+  padding: 16px 18px;
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 12px;
+  border-bottom: 1px solid #4a3800;
+}
+.historia-torneo-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 700;
+  letter-spacing: .8px; color: var(--gold);
+  text-transform: uppercase;
+}
+.historia-torneo-sub {
+  font-size: 12px; color: #8a7a40; margin-top: 2px;
+}
+.historia-campeones-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700;
+  letter-spacing: .5px;
+  background: #3a2e00;
+  border: 1px solid #6a5200;
+  color: var(--gold);
+  padding: 5px 10px; border-radius: 6px;
+  white-space: nowrap;
+}
+.historia-campeones-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 14px 18px 0;
+}
+.campeon-chip {
+  background: #2a2200;
+  border: 1px solid #5a4800;
+  color: var(--gold);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 12px; font-weight: 600;
+}
