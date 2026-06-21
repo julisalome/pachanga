@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Privacidad · Pachanga</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #2d6a2d;
+      --green-light: #3a8c3a;
+      --green-accent: #5cb85c;
+      --surface: #111111;
+      --card: #1c1c1c;
+      --border: #2e2e2e;
+      --text: #efefef;
+      --muted: #777;
+    }
+    html, body {
+      min-height: 100%;
+      background: #0d0d0d;
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+      background: var(--surface);
+      min-height: 100vh;
+    }
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #0f2010 0%, #0a1a0a 60%, #0d1520 100%);
+      padding: 18px 20px;
+      border-bottom: 2px solid transparent;
+      border-image: linear-gradient(90deg, var(--green-accent), #5b9bd5, var(--green-accent)) 1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header-icon {
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 8px rgba(92,184,92,.4));
+    }
+    .header-text h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .header-text p {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    /* CONTENT */
+    .content {
+      padding: 32px 24px 60px;
+      max-width: 680px;
+    }
+    .content h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--green-accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 32px;
+      margin-bottom: 10px;
+    }
+    .content h2:first-child { margin-top: 0; }
+    .content p {
+      color: #ccc;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .content ul {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 12px;
+    }
+    .content ul li {
+      color: #ccc;
+      font-size: 14px;
+      padding: 4px 0 4px 16px;
+      position: relative;
+    }
+    .content ul li::before {
+      content: '·';
+      position: absolute;
+      left: 0;
+      color: var(--green-accent);
+      font-weight: 700;
+    }
+    .date {
+      display: inline-block;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      margin-bottom: 28px;
+    }
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+    }
+    a { color: var(--green-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="header-icon">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="ballGrad" cx="35%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="40%" stop-color="#c8f0c8"/>
+              <stop offset="100%" stop-color="#2d6a2d"/>
+            </radialGradient>
+          </defs>
+          <circle cx="22" cy="22" r="20" fill="url(#ballGrad)" stroke="#1a4a1a" stroke-width="1.5"/>
+          <path d="M22 6 L27 10 L25 16 L19 16 L17 10 Z" fill="#1a2e1a" opacity="0.85"/>
+          <path d="M34 16 L38 21 L35 27 L30 25 L30 19 Z" fill="#1a2e1a" opacity="0.85"/>
+          <path d="M30 31 L33 36 L27 38 L24 33 L28 29 Z" fill="#1a2e1a" opacity="0.85"/>
+          <path d="M14 31 L16 35 L11 36 L9 31 L13 28 Z" fill="#1a2e1a" opacity="0.75"/>
+          <path d="M8 19 L13 17 L16 22 L13 27 L8 25 Z" fill="#1a2e1a" opacity="0.85"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1>Pachanga</h1>
+        <p>Política de Privacidad</p>
+      </div>
+    </div>
+
+    <div class="content">
+      <span class="date">Última actualización: junio de 2026</span>
+
+      <h2>¿Qué información recopilamos?</h2>
+      <p>Pachanga recopila únicamente la información necesaria para que la app funcione correctamente:</p>
+      <ul>
+        <li>Nombre y dirección de correo electrónico (al registrarte con Apple o Google)</li>
+        <li>Foto de perfil (opcional, si la cargás desde tu galería)</li>
+        <li>Información de los grupos, torneos y partidos que creás o en los que participás</li>
+        <li>Estadísticas de juego derivadas de los partidos registrados</li>
+      </ul>
+
+      <div class="divider"></div>
+
+      <h2>¿Cómo usamos tu información?</h2>
+      <p>La información recopilada se usa exclusivamente para:</p>
+      <ul>
+        <li>Crear y gestionar tu cuenta dentro de la app</li>
+        <li>Mostrarte y calcular estadísticas de rendimiento</li>
+        <li>Permitirte unirte a grupos y torneos con otras personas</li>
+        <li>Identificarte dentro de tu grupo (nombre y foto de perfil)</li>
+      </ul>
+      <p>No utilizamos tu información para publicidad, ni la compartimos con terceros con fines comerciales.</p>
+
+      <div class="divider"></div>
+
+      <h2>Almacenamiento de datos</h2>
+      <p>Los datos se almacenan en <strong>Google Firebase (Firestore)</strong>, un servicio de base de datos en la nube de Google. Firebase cumple con los estándares de seguridad SOC 2 y ISO 27001. Podés consultar la política de privacidad de Google en <a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a>.</p>
+      <p>La información se almacena en servidores ubicados en Estados Unidos.</p>
+
+      <div class="divider"></div>
+
+      <h2>Inicio de sesión con Apple</h2>
+      <p>Si usás "Iniciar sesión con Apple", Apple puede ocultar tu dirección de email real y enviarnos una dirección alternativa. Solo recibimos la información que Apple decide compartir: nombre y email (real o enmascarado). No almacenamos contraseñas.</p>
+
+      <div class="divider"></div>
+
+      <h2>Fotos y galería</h2>
+      <p>Pachanga solicita acceso a tu galería únicamente cuando querés cambiar tu foto de perfil. No accedemos a tus fotos en ningún otro momento ni las compartimos con terceros.</p>
+
+      <div class="divider"></div>
+
+      <h2>Tus derechos</h2>
+      <p>Podés en cualquier momento:</p>
+      <ul>
+        <li>Editar o eliminar tu foto de perfil desde la app</li>
+        <li>Salir de un grupo desde la app</li>
+        <li>Solicitar la eliminación completa de tu cuenta y datos escribiéndonos a <a href="mailto:juliansalome1@gmail.com">juliansalome1@gmail.com</a></li>
+      </ul>
+
+      <div class="divider"></div>
+
+      <h2>Menores de edad</h2>
+      <p>Pachanga no está dirigida a menores de 13 años. No recopilamos intencionalmente información de menores. Si creés que un menor ha registrado una cuenta, contactanos para eliminarla.</p>
+
+      <div class="divider"></div>
+
+      <h2>Cambios a esta política</h2>
+      <p>Podemos actualizar esta política en el futuro. Cualquier cambio significativo será notificado dentro de la app. El uso continuado de la app después de los cambios implica la aceptación de la nueva política.</p>
+
+      <div class="divider"></div>
+
+      <h2>Contacto</h2>
+      <p>Si tenés preguntas sobre esta política de privacidad, escribinos a:<br>
+      <a href="mailto:juliansalome1@gmail.com">juliansalome1@gmail.com</a></p>
+    </div>
+  </div>
+</body>
+</html>
